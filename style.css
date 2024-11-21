@@ -128,3 +128,11 @@
 .gap0 {
     gap: 0 !important;
 }
+
+/* 번역 삭제 */
+.translation_settings .menu_button {
+    width: fit-content;
+    display: flex;
+    gap: 10px;
+    flex-direction: row;
+}
