@@ -1,0 +1,11 @@
+{
+    "display_name": "llm-translator",
+    "loading_order": "9",
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "author": "1234anon",
+    "version": "1.0.0",
+    "homePage": "https://github.com/1234anon/llm-translator",
+    "auto_update": true
+}

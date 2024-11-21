@@ -1,0 +1,169 @@
+<div class="translation_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>LLM 번역 설정</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <label for="llm_provider">공급자</label>
+            <select id="llm_provider">
+                <option value="openai">OpenAI</option>
+                <option value="cohere">Cohere</option>
+                <option value="google">Google AI</option>
+                <option value="claude">Claude</option>
+            </select>
+
+            <label for="llm_model">모델</label>
+            <select id="llm_model">
+                <!-- 모델 목록은 동적으로 추가됨 -->
+            </select>
+
+            <!-- 채팅 번역 프롬프트 -->
+            <label for="llm_prompt_chat">채팅 번역 프롬프트</label>
+            <textarea id="llm_prompt_chat" placeholder="채팅 번역 지시문을 입력하세요."></textarea>
+
+            <!-- 입력 번역 프롬프트 -->
+            <label for="llm_prompt_input">입력 번역 프롬프트</label>
+            <textarea id="llm_prompt_input" placeholder="입력 번역 지시문을 입력하세요."></textarea>
+
+            <!-- 파라미터 설정 섹션 -->
+            <div class="parameter-settings">
+                <!-- OpenAI 전용 파라미터 -->
+                <div class="parameter-group openai_params">
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Max Response Length</small>
+                            <input type="range" id="max_length_openai_slider" class="neo-range-slider" min="1" max="4000" step="1">
+                            <input type="number" id="max_length_openai" class="neo-range-input" min="1" max="4000" step="1">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Temperature</small>
+                            <input type="range" id="temperature_openai_slider" class="neo-range-slider" min="0" max="2" step="0.01">
+                            <input type="number" id="temperature_openai" class="neo-range-input" min="0" max="2" step="0.01">
+                        </div>
+                    </div>
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Frequency Penalty</small>
+                            <input type="range" id="frequency_penalty_slider" class="neo-range-slider" min="-2" max="2" step="0.01">
+                            <input type="number" id="frequency_penalty" class="neo-range-input" min="-2" max="2" step="0.01">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Presence Penalty</small>
+                            <input type="range" id="presence_penalty_slider" class="neo-range-slider" min="-2" max="2" step="0.01">
+                            <input type="number" id="presence_penalty" class="neo-range-input" min="-2" max="2" step="0.01">
+                        </div>
+                    </div>
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Top P</small>
+                            <input type="range" id="top_p_slider" class="neo-range-slider" min="0" max="1" step="0.01">
+                            <input type="number" id="top_p" class="neo-range-input" min="0" max="1" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Claude 전용 파라미터 -->
+                <div class="parameter-group claude_params">
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Max Response Length</small>
+                            <input type="range" id="max_length_claude_slider" class="neo-range-slider" min="1" max="4000" step="1">
+                            <input type="number" id="max_length_claude" class="neo-range-input" min="1" max="4000" step="1">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Temperature</small>
+                            <input type="range" id="temperature_claude_slider" class="neo-range-slider" min="0" max="2" step="0.01">
+                            <input type="number" id="temperature_claude" class="neo-range-input" min="0" max="2" step="0.01">
+                        </div>
+                    </div>
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Top K</small>
+                            <input type="range" id="top_k_claude_slider" class="neo-range-slider" min="0" max="100" step="1">
+                            <input type="number" id="top_k_claude" class="neo-range-input" min="0" max="100" step="1">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Top P</small>
+                            <input type="range" id="top_p_claude_slider" class="neo-range-slider" min="0" max="1" step="0.01">
+                            <input type="number" id="top_p_claude" class="neo-range-input" min="0" max="1" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cohere 전용 파라미터 -->
+                <div class="parameter-group cohere_params">
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Max Response Length</small>
+                            <input type="range" id="max_length_cohere_slider" class="neo-range-slider" min="1" max="4000" step="1">
+                            <input type="number" id="max_length_cohere" class="neo-range-input" min="1" max="4000" step="1">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Temperature</small>
+                            <input type="range" id="temperature_cohere_slider" class="neo-range-slider" min="0" max="2" step="0.01">
+                            <input type="number" id="temperature_cohere" class="neo-range-input" min="0" max="2" step="0.01">
+                        </div>
+                    </div>
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Frequency Penalty</small>
+                            <input type="range" id="frequency_penalty_cohere_slider" class="neo-range-slider" min="-2" max="2" step="0.01">
+                            <input type="number" id="frequency_penalty_cohere" class="neo-range-input" min="-2" max="2" step="0.01">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Presence Penalty</small>
+                            <input type="range" id="presence_penalty_cohere_slider" class="neo-range-slider" min="-2" max="2" step="0.01">
+                            <input type="number" id="presence_penalty_cohere" class="neo-range-input" min="-2" max="2" step="0.01">
+                        </div>
+                    </div>
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Top K</small>
+                            <input type="range" id="top_k_cohere_slider" class="neo-range-slider" min="0" max="100" step="1">
+                            <input type="number" id="top_k_cohere" class="neo-range-input" min="0" max="100" step="1">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Top P</small>
+                            <input type="range" id="top_p_cohere_slider" class="neo-range-slider" min="0" max="1" step="0.01">
+                            <input type="number" id="top_p_cohere" class="neo-range-input" min="0" max="1" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Google AI 전용 파라미터 -->
+                <div class="parameter-group google_params">
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Max Response Length</small>
+                            <input type="range" id="max_length_google_slider" class="neo-range-slider" min="1" max="4000" step="1">
+                            <input type="number" id="max_length_google" class="neo-range-input" min="1" max="4000" step="1">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Temperature</small>
+                            <input type="range" id="temperature_google_slider" class="neo-range-slider" min="0" max="2" step="0.01">
+                            <input type="number" id="temperature_google" class="neo-range-input" min="0" max="2" step="0.01">
+                        </div>
+                    </div>
+                    <div class="parameter-row">
+                        <div class="parameterbox flex-container gap0">
+                            <small>Top K</small>
+                            <input type="range" id="top_k_google_slider" class="neo-range-slider" min="0" max="100" step="1">
+                            <input type="number" id="top_k_google" class="neo-range-input" min="0" max="100" step="1">
+                        </div>
+                        <div class="parameterbox flex-container gap0">
+                            <small>Top P</small>
+                            <input type="range" id="top_p_google_slider" class="neo-range-slider" min="0" max="1" step="0.01">
+                            <input type="number" id="top_p_google" class="neo-range-input" min="0" max="1" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="llm_translation_clear" class="menu_button">
+                <i class="fa-solid fa-trash-can"></i>
+                <span>번역 삭제</span>
+            </div>
+        </div>
+    </div>
+</div>
