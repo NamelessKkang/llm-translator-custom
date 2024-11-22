@@ -234,6 +234,8 @@ function updateModelList() {
             'claude-instant-1.1'
         ],
         'google': [
+            'gemini-exp-1114',
+            'gemini-exp-1121',
             'gemini-1.5-pro',
             'gemini-1.5-pro-exp-0801',
             'gemini-1.5-pro-exp-0827',
