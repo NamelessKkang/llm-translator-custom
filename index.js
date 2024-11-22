@@ -229,9 +229,7 @@ function updateModelList() {
             'claude-3-haiku-20240307',
             'claude-2.1',
             'claude-2.0',
-            'claude-1.3',
-            'claude-instant-1.2',
-            'claude-instant-1.1'
+            'claude-1.3'
         ],
         'google': [
             'gemini-exp-1114',
@@ -249,13 +247,7 @@ function updateModelList() {
             'gemini-1.5-flash-8b-exp-0924',
             'gemini-1.5-flash-latest',
             'gemini-1.5-flash-001',
-            'gemini-1.5-flash-002',
-            'gemini-1.0-pro',
-            'gemini-pro',
-            'gemini-1.0-pro-latest',
-            'gemini-1.0-pro-001',
-            'gemini-ultra',
-            'gemini-1.0-ultra-latest'
+            'gemini-1.5-flash-002'
         ],
         'cohere': [
             'c4ai-aya-expanse-32b',
@@ -265,9 +257,7 @@ function updateModelList() {
             'command-r',
             'command-r-plus',
             'command-r-08-2024',
-            'command-r-plus-08-2024',
-            'command-light-nightly',
-            'command-nightly'
+            'command-r-plus-08-2024'
         ]
     };
 
