@@ -10,6 +10,7 @@ import {
 
 import { extension_settings, getContext } from '../../../extensions.js';
 import { SECRET_KEYS, secret_state } from '../../../secrets.js';
+import { POPUP_TYPE, callGenericPopup } from '../../../popup.js';
 
 const extensionName = "llm-translator";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -234,6 +235,7 @@ function updateModelList() {
         'google': [
             'gemini-exp-1114',
             'gemini-exp-1121',
+            'gemini-exp-1206',
             'gemini-1.5-pro',
             'gemini-1.5-pro-exp-0801',
             'gemini-1.5-pro-exp-0827',
@@ -455,14 +457,25 @@ async function onTranslateChatClick() {
     const context = getContext();
     const chat = context.chat;
 
-    if (!chat || chat.length ===0) {
+    if (!chat || chat.length === 0) {
         toastr.warning('번역할 채팅이 없습니다.');
+        return;
+    }
+
+    // 팝업으로 확인
+    const confirm = await callGenericPopup(
+        '전체 채팅을 번역하시겠습니까?<br><br>' +
+        '<b>※주의: 한 번 시작하면 중단할 수 없습니다.</b>',
+        POPUP_TYPE.CONFIRM
+    );
+
+    if (!confirm) {
         return;
     }
 
     toastr.info('채팅 번역을 시작합니다. 잠시만 기다려주세요.');
 
-    for (let i =0;i< chat.length;i++) {
+    for (let i = 0; i < chat.length; i++) {
         await translateMessage(i);
     }
 
@@ -496,9 +509,12 @@ async function onTranslateInputMessageClick() {
 
 // 모든 번역문 삭제
 async function onTranslationsClearClick() {
-    const confirmClear = confirm('번역된 내용을 삭제하시겠습니까?');
+    const confirm = await callGenericPopup(
+        '번역된 내용을 모두 삭제하시겠습니까?',
+        POPUP_TYPE.CONFIRM
+    );
 
-    if (!confirmClear) {
+    if (!confirm) {
         return;
     }
 
