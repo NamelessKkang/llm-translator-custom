@@ -740,16 +740,11 @@ jQuery(async () => {
     });
     $('head').append(cssLink);
 
-    // 설정 로드 및 이벤트 핸들러 등록
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            // 설정 로드
-            loadSettings();
-
-            // 이벤트 핸들러 등록
-            initializeEventHandlers();
-        });
-    });
+    // html 완전 로드 후 설정 불러오기
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    loadSettings();
+    initializeEventHandlers();
 });
 
 // 이벤트 핸들러 등록 함수
