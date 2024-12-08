@@ -492,7 +492,7 @@ async function onTranslateChatClick() {
         return;
     }
 
-    // 팝업으로 확인 (선택 사항)
+    // 팝업으로 확인
     const confirm = await callGenericPopup(
         '전체 채팅을 번역하시겠습니까?<br><br>' +
         '<b>※주의: 한 번 시작하면 중단할 수 없습니다.</b>',
@@ -740,14 +740,26 @@ jQuery(async () => {
     });
     $('head').append(cssLink);
 
-    // 설정 로드
-    loadSettings();
+    // 설정 로드 및 이벤트 핸들러 등록
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            // 설정 로드
+            loadSettings();
 
-    // 이벤트 핸들러 등록
+            // 이벤트 핸들러 등록
+            initializeEventHandlers();
+        });
+    });
+});
+
+// 이벤트 핸들러 등록 함수
+function initializeEventHandlers() {
+    // 버튼 클릭 이벤트 핸들러
     $('#llm_translate_chat').off('click').on('click', onTranslateChatClick);
     $('#llm_translate_input_message').off('click').on('click', onTranslateInputMessageClick);
     $('#llm_translation_clear').off('click').on('click', onTranslationsClearClick);
 
+    // 공급자 변경 이벤트 핸들러
     $('#llm_provider').off('change').on('change', function() {
         const provider = $(this).val();
         extensionSettings.llm_provider = provider;
@@ -757,6 +769,7 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    // 모델 변경 이벤트 핸들러
     $('#llm_model').off('change').on('change', function() {
         const provider = $('#llm_provider').val();
         const selectedModel = $(this).val();
@@ -765,6 +778,7 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    // 프롬프트 입력 이벤트 핸들러
     $('#llm_prompt_chat').off('input').on('input', function() {
         extensionSettings.llm_prompt_chat = $(this).val();
         saveSettingsDebounced();
@@ -775,6 +789,7 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    // 파라미터 입력 이벤트 핸들러
     $('.parameter-settings input').off('input change').on('input change', function() {
         const provider = $('#llm_provider').val();
 
@@ -800,6 +815,7 @@ jQuery(async () => {
         translateMessage(messageId);
     });
 
+    // 메세지에 자동 번역버튼 추가
     if (!window.llmTranslatorObserver) {
         window.llmTranslatorObserver = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
@@ -839,7 +855,8 @@ jQuery(async () => {
         editTranslation(messageId);
     });
 
+    // 채팅 변경 시 아이콘 추가를 위해 이벤트 핸들러 등록
     eventSource.on(event_types.CHAT_CHANGED, function() {
-        setTimeout(addButtonsToExistingMessages, 100);
+        setTimeout(addButtonsToExistingMessages,100);
     });
-});
+}
