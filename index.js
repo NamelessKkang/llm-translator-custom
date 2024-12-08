@@ -21,6 +21,12 @@ if (!extensionSettings) {
     extension_settings[extensionName] = extensionSettings;
 }
 
+// 번역 진행 상태 추적
+const translationInProgress = {};
+
+// 전체 채팅 번역의 진행 상태 추적
+let isChatTranslationInProgress = false;
+
 // 기본 세팅
 const defaultSettings = {
     llm_provider: 'openai',
@@ -91,11 +97,11 @@ function loadSettings() {
     $('#llm_prompt_chat').val(extensionSettings.llm_prompt_chat);
     $('#llm_prompt_input').val(extensionSettings.llm_prompt_input);
 
-    // Show parameters for current provider immediately
+    // 현재 공급자의 파라미터 불러오기
     updateParameterVisibility(currentProvider);
     loadParameterValues(currentProvider);
 
-    // Update model list with current provider's last used model
+    // 현재 공급자의 마지막 사용 모델 불러오기
     updateModelList();
 }
 
@@ -412,18 +418,30 @@ async function translateMessage(messageId, forceTranslate = false) {
         message.extra = {};
     }
 
-    if (forceTranslate || !message.extra.display_text) {
-        const originalText = substituteParams(message.mes, context.name1, message.name);
-        try {
+    // 이미 번역 중인 경우
+    if (translationInProgress[messageId]) {
+        toastr.info('번역이 이미 진행 중입니다.');
+        return;
+    }
+
+    // 번역 중으로 설정
+    translationInProgress[messageId] = true;
+
+    try {
+        if (forceTranslate || !message.extra.display_text) {
+            const originalText = substituteParams(message.mes, context.name1, message.name);
             const prompt = extensionSettings.llm_prompt_chat || 'Please translate the following text to korean:';
             const translation = await llmTranslate(originalText, prompt);
             message.extra.display_text = translation;
             updateMessageBlock(messageId, message);
             await context.saveChat();
-        } catch (error) {
-            console.error(error);
-            toastr.error('번역에 실패하였습니다.');
         }
+    } catch (error) {
+        console.error(error);
+        toastr.error('번역에 실패하였습니다.');
+    } finally {
+        // 번역 완료 후 플래그 해제
+        translationInProgress[messageId] = false;
     }
 }
 
@@ -454,15 +472,27 @@ async function toggleOriginalText(messageId) {
 
 // 전체 채팅 번역
 async function onTranslateChatClick() {
-    const context = getContext();
-    const chat = context.chat;
-
-    if (!chat || chat.length === 0) {
-        toastr.warning('번역할 채팅이 없습니다.');
+    // 번역이 이미 진행 중인지 확인
+    if (isChatTranslationInProgress) {
+        toastr.info('채팅 번역이 이미 진행 중입니다.');
         return;
     }
 
-    // 팝업으로 확인
+    // 번역 진행 중으로 상태 변경
+    isChatTranslationInProgress = true;
+
+    const context = getContext();
+    const chat = context.chat;
+
+    if (!chat || chat.length ===0) {
+        toastr.warning('번역할 채팅이 없습니다.');
+
+        // 번역 진행 상태 해제
+        isChatTranslationInProgress = false;
+        return;
+    }
+
+    // 팝업으로 확인 (선택 사항)
     const confirm = await callGenericPopup(
         '전체 채팅을 번역하시겠습니까?<br><br>' +
         '<b>※주의: 한 번 시작하면 중단할 수 없습니다.</b>',
@@ -470,17 +500,27 @@ async function onTranslateChatClick() {
     );
 
     if (!confirm) {
+        // 번역 진행 상태 해제
+        isChatTranslationInProgress = false;
         return;
     }
 
     toastr.info('채팅 번역을 시작합니다. 잠시만 기다려주세요.');
 
-    for (let i = 0; i < chat.length; i++) {
-        await translateMessage(i);
-    }
+    try {
+        for (let i =0;i < chat.length;i++) {
+            await translateMessage(i);
+        }
 
-    await context.saveChat();
-    toastr.success('채팅 번역이 완료되었습니다.');
+        await context.saveChat();
+        toastr.success('채팅 번역이 완료되었습니다.');
+    } catch (error) {
+        console.error(error);
+        toastr.error('채팅 번역에 실패하였습니다.');
+    } finally {
+        // 번역 진행 상태 해제
+        isChatTranslationInProgress = false;
+    }
 }
 
 // 인풋 번역
@@ -537,14 +577,19 @@ const createTranslateButtons = (mesBlock) => {
     const messageId = mesBlock.attr('mesid');
     const extraMesButtons = mesBlock.find('.extraMesButtons');
 
+    // 아이콘이 이미 추가되어 있는지 확인
+    if (mesBlock.find('.mes_llm_translate').length >0) {
+        return;
+    }
+
+    // 아이콘 생성
     const translateButton = $('<div>')
         .addClass('mes_button mes_llm_translate fa-solid fa-brain interactable')
         .attr({
             'title': 'LLM 번역',
             'data-i18n': '[title]LLM 번역',
             'tabindex': '0'
-        })
-        .on('click', () => translateMessage(messageId, true));
+        });
 
     const toggleButton = $('<div>')
         .addClass('mes_button mes_toggle_original fa-solid fa-magnifying-glass interactable')
@@ -552,8 +597,7 @@ const createTranslateButtons = (mesBlock) => {
             'title': '원문/번역 전환',
             'data-i18n': '[title]원문/번역 전환',
             'tabindex': '0'
-        })
-        .on('click', () => toggleOriginalText(messageId));
+        });
 
     const editButton = $('<div>')
         .addClass('mes_button mes_edit_translation fa-solid fa-scissors interactable')
@@ -561,13 +605,22 @@ const createTranslateButtons = (mesBlock) => {
             'title': '번역문 수정',
             'data-i18n': '[title]번역문 수정',
             'tabindex': '0'
-        })
-        .on('click', () => editTranslation(messageId));
+        });
 
     extraMesButtons.prepend(editButton);
     extraMesButtons.prepend(toggleButton);
     extraMesButtons.prepend(translateButton);
 };
+
+// 기존 메시지에 아이콘 추가
+function addButtonsToExistingMessages() {
+    $('#chat .mes').each(function() {
+        const $this = $(this);
+        if (!$this.find('.mes_llm_translate').length) {
+            createTranslateButtons($this);
+        }
+    });
+}
 
 // 번역문 수정
 async function editTranslation(messageId) {
@@ -664,7 +717,16 @@ async function editTranslation(messageId) {
     editTextarea.focus();
 }
 
+// 초기화 여부 체크
+let isInitialized = false;
+
+// jQuery 초기화 블록
 jQuery(async () => {
+    // 초기화 체크
+    if (isInitialized) return;
+    isInitialized = true;
+
+    // 필요한 HTML과 CSS 로드
     const html = await $.get(`${extensionFolderPath}/index.html`);
     const buttonHtml = await $.get(`${extensionFolderPath}/buttons.html`);
 
@@ -677,10 +739,8 @@ jQuery(async () => {
         href: `${extensionFolderPath}/style.css`
     });
     $('head').append(cssLink);
-    
-    // html 완전 로드 후 설정 불러오기
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+
+    // 설정 로드
     loadSettings();
 
     // 이벤트 핸들러 등록
@@ -715,9 +775,9 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    $('.parameter-settings input').on('input change', function() {
+    $('.parameter-settings input').off('input change').on('input change', function() {
         const provider = $('#llm_provider').val();
-        
+
         if ($(this).hasClass('neo-range-slider')) {
             const value = $(this).val();
             $(this).next('.neo-range-input').val(value);
@@ -725,49 +785,58 @@ jQuery(async () => {
             const value = $(this).val();
             $(this).prev('.neo-range-slider').val(value);
         }
-        
+
         saveParameterValues(provider);
     });
 
-    loadSettings();
+    // 이벤트 소스에 이벤트 핸들러 등록
+    eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, function({ messageId }) {
+        translateMessage(messageId);
+    });
+    eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, function({ messageId }) {
+        translateMessage(messageId);
+    });
+    eventSource.makeFirst(event_types.MESSAGE_SWIPED, function({ messageId }) {
+        translateMessage(messageId);
+    });
 
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, function({ messageId }) {
-        translateMessage(messageId);
-    });
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, function({ messageId }) {
-        translateMessage(messageId);
-    });
-    eventSource.on(event_types.MESSAGE_SWIPED, function({ messageId }) {
-        translateMessage(messageId);
-    });
+    if (!window.llmTranslatorObserver) {
+        window.llmTranslatorObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.classList?.contains('mes')) {
+                        const $node = $(node);
+                        if (!$node.find('.mes_llm_translate').length) {
+                            createTranslateButtons($node);
+                        }
+                    }
+                });
+            });
+        });
 
-    function addButtonsToExistingMessages() {
-        $('#chat .mes').each(function() {
-            const $this = $(this);
-            if (!$this.find('.mes_llm_translate').length) {
-                createTranslateButtons($this);
-            }
+        window.llmTranslatorObserver.observe(document.getElementById('chat'), {
+            childList: true,
+            subtree: true
         });
     }
 
+    // 기존 메시지에 아이콘 추가
     addButtonsToExistingMessages();
 
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-                if (node.classList?.contains('mes')) {
-                    const $node = $(node);
-                    if (!$node.find('.mes_llm_translate').length) {
-                        createTranslateButtons($node);
-                    }
-                }
-            });
-        });
+    // 아이콘 클릭 이벤트 위임
+    $(document).off('click', '.mes .mes_llm_translate').on('click', '.mes .mes_llm_translate', function() {
+        const messageId = $(this).closest('.mes').attr('mesid');
+        translateMessage(messageId, true);
     });
 
-    observer.observe(document.getElementById('chat'), {
-        childList: true,
-        subtree: true
+    $(document).off('click', '.mes .mes_toggle_original').on('click', '.mes .mes_toggle_original', function() {
+        const messageId = $(this).closest('.mes').attr('mesid');
+        toggleOriginalText(messageId);
+    });
+
+    $(document).off('click', '.mes .mes_edit_translation').on('click', '.mes .mes_edit_translation', function() {
+        const messageId = $(this).closest('.mes').attr('mesid');
+        editTranslation(messageId);
     });
 
     eventSource.on(event_types.CHAT_CHANGED, function() {
