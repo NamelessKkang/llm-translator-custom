@@ -1,14 +1,19 @@
 <div class="translation_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>LLM 번역 설정</b>
+            <b>LLM Translator</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
+            <!-- 체크박스 -->
             <label class="flex-container">
                 <input type="checkbox" id="llm_translation_button_toggle">퀵 입력 번역 버튼 추가
             </label>
+            <label class="flex-container">
+                <input type="checkbox" id="llm_prefill_toggle">프리필 사용
+            </label>            
             <hr>
+                        
             <label for="llm_provider">공급자</label>
             <select id="llm_provider">
                 <option value="openai">OpenAI</option>
@@ -29,6 +34,10 @@
             <!-- 입력 번역 프롬프트 -->
             <label for="llm_prompt_input">입력 번역 프롬프트</label>
             <textarea id="llm_prompt_input" placeholder="입력 번역 지시문을 입력하세요."></textarea>
+
+            <!-- 프리필 -->
+            <label for="llm_prefill_content">프리필</label>
+            <textarea id="llm_prefill_content" placeholder="프리필을 입력하세요."></textarea>
 
             <!-- 파라미터 설정 섹션 -->
             <div class="parameter-settings">

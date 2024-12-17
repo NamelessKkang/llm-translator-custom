@@ -44,6 +44,8 @@ const defaultSettings = {
     show_input_translate_button: false,
     llm_prompt_chat: 'Please translate the following text to korean:',
     llm_prompt_input: 'Please translate the following text to english:',
+    llm_prefill_toggle: false,
+    llm_prefill_content: 'Understood. Executing the translation as instructed. Here is the translation:',
     temperature: 0.7,
     max_tokens: 1000,
     parameters: {
@@ -108,6 +110,10 @@ function loadSettings() {
 
     // 현재 공급자의 마지막 사용 모델 불러오기
     updateModelList();
+    
+    // 프리필 사용 여부 및 내용 로드
+    $('#llm_prefill_toggle').prop('checked', extensionSettings.llm_prefill_toggle);
+    $('#llm_prefill_content').val(extensionSettings.llm_prefill_content);    
     
     // 스로틀링 딜레이 값
     $('#throttle_delay').val(extensionSettings.throttle_delay || '0');
@@ -305,13 +311,27 @@ async function llmTranslate(text, prompt) {
     const fullPrompt = `${prompt}\n\n${text}`;
 
     let apiKey;
-    let messages;
+    let messages = [];
     let parameters;
 
+    // 사용자 메시지 추가
+    messages.push({ role: 'user', content: fullPrompt });
+    
+    // 프리필 사용 시 메세지 포맷
+    if (extensionSettings.llm_prefill_toggle) {
+        const prefillContent = extensionSettings.llm_prefill_content || 'Understood. Executing the translation as instructed. Here is my response:';
+
+        if (provider === 'google') {
+            messages.push({ role: 'model', content: prefillContent });
+        } else {
+            messages.push({ role: 'assistant', content: prefillContent });
+        }
+    }
+
+    // 공급자별 파라미터
     switch (provider) {
         case 'openai':
             apiKey = secret_state[SECRET_KEYS.OPENAI];
-            messages = [{ role: 'user', content: fullPrompt }];
             parameters = {
                 model: model,
                 messages: messages,
@@ -325,7 +345,6 @@ async function llmTranslate(text, prompt) {
 
         case 'claude':
             apiKey = secret_state[SECRET_KEYS.CLAUDE];
-            messages = [{ role: 'user', content: fullPrompt }];
             parameters = {
                 model: model,
                 messages: messages,
@@ -339,7 +358,6 @@ async function llmTranslate(text, prompt) {
 
         case 'google':
             apiKey = secret_state[SECRET_KEYS.MAKERSUITE];
-            messages = [{ role: 'user', content: fullPrompt }];
             parameters = {
                 model: model,
                 messages: messages,
@@ -353,7 +371,6 @@ async function llmTranslate(text, prompt) {
 
         case 'cohere':
             apiKey = secret_state[SECRET_KEYS.COHERE];
-            messages = [{ role: 'user', content: fullPrompt }];
             parameters = {
                 model: model,
                 messages: messages,
@@ -854,11 +871,23 @@ function initializeEventHandlers() {
         saveParameterValues(provider);
     });
 
-    // 체크박스 이벤트 핸들러
+    // 입력 번역 체크박스 이벤트 핸들러
     $('#llm_translation_button_toggle').off('change').on('change', function() {
         extensionSettings.show_input_translate_button = $(this).is(':checked');
         saveSettingsDebounced();
         updateInputTranslateButton();
+    });
+    
+    // 프리필 사용 체크박스 이벤트 핸들러
+    $('#llm_prefill_toggle').off('change').on('change', function() {
+        extensionSettings.llm_prefill_toggle = $(this).is(':checked');
+        saveSettingsDebounced();
+    });
+
+    // 프리필 내용 입력 이벤트 핸들러
+    $('#llm_prefill_content').off('input').on('input', function() {
+        extensionSettings.llm_prefill_content = $(this).val();
+        saveSettingsDebounced();
     });
     
     // 이벤트 소스에 이벤트 핸들러 등록
