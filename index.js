@@ -27,6 +27,9 @@ const translationInProgress = {};
 // 전체 채팅 번역의 진행 상태 추적
 let isChatTranslationInProgress = false;
 
+// 전체 채팅 번역 기본값
+let isTranslateChatCanceled = false;
+
 // 기본 세팅
 const defaultSettings = {
     llm_provider: 'openai',
@@ -37,6 +40,7 @@ const defaultSettings = {
         google: 'gemini-1.5-pro',
         cohere: 'command'
     },
+    throttle_delay: '0',
     llm_prompt_chat: 'Please translate the following text to korean:',
     llm_prompt_input: 'Please translate the following text to english:',
     temperature: 0.7,
@@ -103,6 +107,9 @@ function loadSettings() {
 
     // 현재 공급자의 마지막 사용 모델 불러오기
     updateModelList();
+    
+    // 스로틀링 딜레이 값
+    $('#throttle_delay').val(extensionSettings.throttle_delay || '0');
 }
 
 // 파라미터 섹션 표시/숨김
@@ -472,14 +479,18 @@ async function toggleOriginalText(messageId) {
 
 // 전체 채팅 번역
 async function onTranslateChatClick() {
-    // 번역이 이미 진행 중인지 확인
+    const translateButton = $('#llm_translate_chat');
+
     if (isChatTranslationInProgress) {
-        toastr.info('채팅 번역이 이미 진행 중입니다.');
+        // 번역 중이면 번역 중단
+        isTranslateChatCanceled = true;
+        toastr.info('채팅 번역을 중단합니다.');
         return;
     }
 
     // 번역 진행 중으로 상태 변경
     isChatTranslationInProgress = true;
+    isTranslateChatCanceled = false;
 
     const context = getContext();
     const chat = context.chat;
@@ -494,8 +505,7 @@ async function onTranslateChatClick() {
 
     // 팝업으로 확인
     const confirm = await callGenericPopup(
-        '전체 채팅을 번역하시겠습니까?<br><br>' +
-        '<b>※주의: 한 번 시작하면 중단할 수 없습니다.</b>',
+        '전체 채팅을 번역하시겠습니까?',
         POPUP_TYPE.CONFIRM
     );
 
@@ -505,21 +515,46 @@ async function onTranslateChatClick() {
         return;
     }
 
+    // 번역 버튼을 중단 버튼으로 변경
+    translateButton.find('.fa-brain').removeClass('fa-brain').addClass('fa-stop-circle');
+    translateButton.find('span').text('번역 중단');
+    translateButton.addClass('translating');
+
     toastr.info('채팅 번역을 시작합니다. 잠시만 기다려주세요.');
 
     try {
+        // 스로틀링 설정 로드
+        const throttleDelay = parseInt(extensionSettings.throttle_delay) ||0;
+
         for (let i =0;i < chat.length;i++) {
+            if (isTranslateChatCanceled) {
+                toastr.info('채팅 번역이 중단되었습니다.');
+                break;
+            }
+
             await translateMessage(i);
+
+            if (throttleDelay >0) {
+                await new Promise(resolve => setTimeout(resolve, throttleDelay));
+            }
         }
 
-        await context.saveChat();
-        toastr.success('채팅 번역이 완료되었습니다.');
+        if (!isTranslateChatCanceled) {
+            await context.saveChat();
+            toastr.success('채팅 번역이 완료되었습니다.');
+        }
     } catch (error) {
         console.error(error);
         toastr.error('채팅 번역에 실패하였습니다.');
     } finally {
         // 번역 진행 상태 해제
         isChatTranslationInProgress = false;
+        isTranslateChatCanceled = false;
+
+        // 번역 버튼 원래대로 복원
+        translateButton.find('.fa-stop-circle').removeClass('fa-stop-circle').addClass('fa-brain');
+        translateButton.find('span').text('LLM으로 전체 번역');
+        translateButton.removeClass('translating');
     }
 }
 
@@ -853,5 +888,11 @@ function initializeEventHandlers() {
     // 채팅 변경 시 아이콘 추가를 위해 이벤트 핸들러 등록
     eventSource.on(event_types.CHAT_CHANGED, function() {
         setTimeout(addButtonsToExistingMessages,100);
+    });
+    
+    // 스로틀링 딜레이 입력 이벤트 핸들러
+    $('#throttle_delay').off('input change').on('input change', function() {
+        extensionSettings.throttle_delay = $(this).val();
+        saveSettingsDebounced();
     });
 }

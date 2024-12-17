@@ -159,7 +159,15 @@
                     </div>
                 </div>
             </div>
-
+            
+            <!-- 스로틀링 설정 -->
+            <label for="throttle_delay">
+            전체 번역 딜레이
+            <small>(ms)</small>
+            </label>
+            <input type="number" id="throttle_delay" min="0" value="0" class="text_pole" step="1">
+            
+            <!-- 번역 삭제 -->            
             <div id="llm_translation_clear" class="menu_button">
                 <i class="fa-solid fa-trash-can"></i>
                 <span>번역 삭제</span>
