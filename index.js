@@ -41,6 +41,7 @@ const defaultSettings = {
         cohere: 'command'
     },
     throttle_delay: '0',
+    show_input_translate_button: false,
     llm_prompt_chat: 'Please translate the following text to korean:',
     llm_prompt_input: 'Please translate the following text to english:',
     temperature: 0.7,
@@ -110,6 +111,10 @@ function loadSettings() {
     
     // 스로틀링 딜레이 값
     $('#throttle_delay').val(extensionSettings.throttle_delay || '0');
+
+    // 체크박스 상태 설정 및 버튼 업데이트
+    $('#llm_translation_button_toggle').prop('checked', extensionSettings.show_input_translate_button);
+    updateInputTranslateButton();
 }
 
 // 파라미터 섹션 표시/숨김
@@ -752,6 +757,21 @@ async function editTranslation(messageId) {
     editTextarea.focus();
 }
 
+// 입력 번역 버튼
+function updateInputTranslateButton() {
+    if (extensionSettings.show_input_translate_button) {
+        if ($('#llm_translate_input_button').length ===0) {
+            // sendform.html 로드
+            $.get(`${extensionFolderPath}/sendform.html`, function(data) {
+                $('#rightSendForm').append(data);
+                $('#llm_translate_input_button').off('click').on('click', onTranslateInputMessageClick);
+            });
+        }
+    } else {
+        $('#llm_translate_input_button').remove();
+    }
+}
+
 // 초기화 여부 체크
 let isInitialized = false;
 
@@ -834,6 +854,13 @@ function initializeEventHandlers() {
         saveParameterValues(provider);
     });
 
+    // 체크박스 이벤트 핸들러
+    $('#llm_translation_button_toggle').off('change').on('change', function() {
+        extensionSettings.show_input_translate_button = $(this).is(':checked');
+        saveSettingsDebounced();
+        updateInputTranslateButton();
+    });
+    
     // 이벤트 소스에 이벤트 핸들러 등록
     eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, function({ messageId }) {
         translateMessage(messageId);
