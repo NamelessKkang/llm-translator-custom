@@ -42,6 +42,9 @@ const defaultSettings = {
     },
     throttle_delay: '0',
     show_input_translate_button: false,
+    use_reverse_proxy: false,
+    reverse_proxy_url: '',
+    reverse_proxy_password: '',
     llm_prompt_chat: 'Please translate the following text to korean:',
     llm_prompt_input: 'Please translate the following text to english:',
     llm_prefill_toggle: false,
@@ -121,6 +124,19 @@ function loadSettings() {
     // 체크박스 상태 설정 및 버튼 업데이트
     $('#llm_translation_button_toggle').prop('checked', extensionSettings.show_input_translate_button);
     updateInputTranslateButton();
+    
+    // 리버스 프록시 설정 로드
+    $('#llm_use_reverse_proxy').prop('checked', extensionSettings.use_reverse_proxy);
+    $('#llm_reverse_proxy_url').val(extensionSettings.reverse_proxy_url);
+    $('#llm_reverse_proxy_password').val(extensionSettings.reverse_proxy_password);
+}
+
+// 리버스 프록시 설정 저장
+function saveReverseProxySettings() {
+    extensionSettings.use_reverse_proxy = $('#llm_use_reverse_proxy').is(':checked');
+    extensionSettings.reverse_proxy_url = $('#llm_reverse_proxy_url').val();
+    extensionSettings.reverse_proxy_password = $('#llm_reverse_proxy_password').val();
+    saveSettingsDebounced();
 }
 
 // 파라미터 섹션 표시/숨김
@@ -386,8 +402,14 @@ async function llmTranslate(text, prompt) {
             throw new Error('지원되지 않습니다.');
     }
 
-    if (!apiKey) {
+    if (!apiKey && !extensionSettings.use_reverse_proxy) {
         throw new Error(`${provider.toUpperCase()} API 키가 설정되어 있지 않습니다.`);
+    }
+
+    // 리버스 프록시 사용 시 파라미터 추가
+    if (extensionSettings.use_reverse_proxy) {
+        parameters.reverse_proxy = extensionSettings.reverse_proxy_url;
+        parameters.proxy_password = extensionSettings.reverse_proxy_password;
     }
 
     const apiUrl = '/api/backends/chat-completions/generate';
@@ -951,4 +973,27 @@ function initializeEventHandlers() {
         extensionSettings.throttle_delay = $(this).val();
         saveSettingsDebounced();
     });
+    
+    // 리버스 프록시 사용 체크박스 이벤트 핸들러
+    $('#llm_use_reverse_proxy').off('change').on('change', function() {
+        saveReverseProxySettings();
+    });
+
+    // 리버스 프록시 URL 입력 이벤트 핸들러
+    $('#llm_reverse_proxy_url').off('input').on('input', function() {
+        saveReverseProxySettings();
+    });
+
+    // 리버스 프록시 비밀번호 입력 이벤트 핸들러
+    $('#llm_reverse_proxy_password').off('input').on('input', function() {
+        saveReverseProxySettings();
+    });
+
+    // 비밀번호 보기/숨기기 기능
+    $('#llm_reverse_proxy_password_show').off('click').on('click', function() {
+        const passwordInput = $('#llm_reverse_proxy_password');
+        const type = passwordInput.attr('type') === 'password' ? 'text' : 'password';
+        passwordInput.attr('type', type);
+        $(this).toggleClass('fa-eye-slash fa-eye');
+    });    
 }

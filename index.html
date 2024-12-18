@@ -11,7 +11,10 @@
             </label>
             <label class="flex-container">
                 <input type="checkbox" id="llm_prefill_toggle">프리필 사용
-            </label>            
+            </label>
+            <label class="flex-container">
+                <input type="checkbox" id="llm_use_reverse_proxy">리버스 프록시 사용
+            </label>
             <hr>
                         
             <label for="llm_provider">공급자</label>
@@ -172,6 +175,21 @@
                     </div>
                 </div>
             </div>
+
+            <hr>
+
+            <!-- 리버스 프록시 주소 -->
+            <label for="llm_reverse_proxy_url" class="input-label">리버스 프록시 주소</label>
+            <input id="llm_reverse_proxy_url" type="text" class="text_pole" placeholder="예: https://myproxy.com/v1">
+
+            <!-- 리버스 프록시 비밀번호 -->
+            <label for="llm_reverse_proxy_password" class="input-label">리버스 프록시 비밀번호</label>
+            <div class="password-container">
+                <input id="llm_reverse_proxy_password" type="password" class="text_pole" placeholder="비밀번호를 입력하세요." autocomplete="off">
+                <div id="llm_reverse_proxy_password_show" title="비밀번호 보기" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
+            </div>
+            
+            <hr>
             
             <!-- 스로틀링 설정 -->
             <label for="throttle_delay">

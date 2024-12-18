@@ -129,6 +129,17 @@
     gap: 0 !important;
 }
 
+/* 리버스 프록시 */
+.password-container {
+    display: flex;
+    width: 100%;
+}
+
+.password-container .text_pole {
+    flex: 1;
+    margin-right: 5px;
+}
+
 /* 번역 삭제 */
 .translation_settings .menu_button {
     width: fit-content;
