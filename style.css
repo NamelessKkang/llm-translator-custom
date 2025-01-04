@@ -1,73 +1,36 @@
 /* 번역 수정창 */
-.translation_edit_container {
-    width: 100%;
+.translation_edit_buttons {
     display: flex;
-    flex-direction: column;
-    margin-top: 1em;
-    box-sizing: border-box;
-    clear: both;
-    position: relative;
-    padding-right: 25px;
+    justify-content: center;
+    gap: 7px;
+    margin-bottom: 5px;
 }
 
-.translation_edit_textarea {
-    width: 100%;
-    padding: 1em;
-    margin: 0;
-    background-color: var(--SmartThemeBlurTintColor);
-    line-height: 1.5;
-    border: none;
-    border-radius: 8px;
-    resize: vertical;
-    color: var(--SmartThemeBodyColor);
-    max-height: 400px;
-    min-height: 50px;
-    overflow-y: auto;
-    box-sizing: border-box;
-}
-
-.translation_edit_button_container {
-    display: flex;
-    gap: 0.5em;
-    margin-top: 0.5em;
-    justify-content: flex-end;
-    position: absolute;
-    top: 0;
-    right: 0;
-    padding-right: 25px;
-}
-
-.translation_edit_action {
-    font-size: 1.2em;
-    color: var(--smartThemeButtonFontColor);
-}
-
-.mes .extraMesButtons .translation_edit_action {
+.translation_edit_buttons .translation_edit_done,
+.translation_edit_buttons .translation_edit_cancel {
     opacity: 0.7;
-    padding: 0.25em;
-    border-radius: 4px;
     cursor: pointer;
-    transition: opacity .3s ease;
-    font-size: 0.9em;
-    background-color: var(--SmartThemeBlurTintColor);
+    font-size: 1.5em;
     color: var(--SmartThemeBodyColor);
-    margin-left: 0.5em;
 }
 
-.mes .extraMesButtons .translation_edit_action:hover {
+.translation_edit_buttons .translation_edit_done:hover,
+.translation_edit_buttons .translation_edit_cancel:hover {
     opacity: 1;
 }
 
-.mes.editing .mes_edit,
-.mes.editing .mes_buttons {
-    display: none;
+.mes.translation-editing .mes_buttons *,
+.mes.translation-editing .swipeRightBlock,
+.mes.translation-editing .swipe_left {
+    display: none  !important;
 }
 
 /* 메세지 액션 아이콘 줄바꿈 */
-.extraMesButtons {
+.extraMesButtons.visible,
+body.expandMessageActions .mes .mes_buttons .extraMesButtons {
     display: flex;
     flex-wrap: wrap;
-}
+} 
 
 /* 파라미터 설정 섹션 */
 .parameter-settings {

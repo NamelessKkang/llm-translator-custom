@@ -712,87 +712,61 @@ async function editTranslation(messageId) {
     }
 
     const mesBlock = $(`.mes[mesid="${messageId}"]`);
-
-    if (mesBlock.find('.translation_edit_container').length >0) {
-        return;
-    }
-
     const mesText = mesBlock.find('.mes_text');
-    const mesButtons = mesBlock.find('.mes_buttons');
-    const messageActionButton = mesButtons.find('.extraMesButtonsHint');
-    const extraMesButtons = mesButtons.find('.extraMesButtons');
-    const editButton = mesButtons.find('.mes_edit');
 
-    const originalButtonStates = extraMesButtons.find('> div').map(function() {
-        return {
-            element: $(this),
-            display: $(this).css('display'),
-            classes: $(this).attr('class')
-        };
-    }).get();
-
-    mesBlock.addClass('editing');
-
-    const editContainer = $('<div>')
-        .addClass('translation_edit_container');
+    // 편집 모드로 전환
+    mesBlock.addClass('translation-editing');
+    mesBlock.find('.mes_buttons').hide();
 
     const editTextarea = $('<textarea>')
-        .addClass('translation_edit_textarea')
+        .addClass('edit_textarea translation_edit_textarea')
         .val(message.extra.display_text);
 
-    editContainer.append(editTextarea);
+    // 완료 및 취소 버튼 생성
+    const editButtons = $('<div>').addClass('translation_edit_buttons');
 
-    const buttonContainer = $('<div>')
-        .addClass('translation_edit_button_container');
-
-    const cancelButton = $('<div>')
-        .addClass('translation_edit_action interactable fa-solid fa-times-circle')
-        .attr('title', '취소');
-
-    const doneButton = $('<div>')
-        .addClass('translation_edit_action interactable fa-solid fa-check-circle')
+    const saveButton = $('<div>')
+        .addClass('translation_edit_done interactable fa-solid fa-check-circle')
         .attr('title', '저장');
 
-    buttonContainer.append(cancelButton, doneButton);
+    const cancelButton = $('<div>')
+        .addClass('translation_edit_cancel interactable fa-solid fa-times-circle')
+        .attr('title', '취소');
+
+    editButtons.append(saveButton, cancelButton);
 
     mesText.hide();
-    mesText.after(editContainer);
-    mesBlock.append(buttonContainer);
+    mesText.after(editTextarea);
+    editTextarea.before(editButtons);
 
-    const cleanup = async () => {
-        editContainer.remove();
-        buttonContainer.remove();
+    // 이벤트 핸들러
+    cancelButton.on('click', function() {
+        // 편집 취소
+        editTextarea.remove();
+        editButtons.remove();
         mesText.show();
+        mesBlock.removeClass('translation-editing');
+        mesBlock.find('.mes_buttons').show();
+    });
 
-        originalButtonStates.forEach(({element, display, classes}) => {
-            element.css('display', display);
-            element.attr('class', classes);
-        });
-
-        mesBlock.removeClass('editing');
-    };
-
-    cancelButton.on('click', cleanup);
-
-    doneButton.on('click', async () => {
+    saveButton.on('click', async function() {
+        // 편집 내용 저장
         const newText = editTextarea.val();
-        if (newText && newText !== message.extra.display_text) {
+        if (newText !== message.extra.display_text) {
             message.extra.display_text = newText;
             await updateMessageBlock(messageId, message);
             await context.saveChat();
             toastr.success('번역문이 수정되었습니다.');
         }
-        await cleanup();
+        // 편집 종료
+        editTextarea.remove();
+        editButtons.remove();
+        mesText.show();
+        mesBlock.removeClass('translation-editing');
+        mesBlock.find('.mes_buttons').show();
     });
 
-    const adjustTextareaHeight = () => {
-        editTextarea.css('height', 'auto');
-        editTextarea.css('height', (editTextarea[0].scrollHeight +2) +'px');
-    };
-
-    editTextarea.on('input', adjustTextareaHeight);
-    adjustTextareaHeight();
-
+    // 텍스트 영역 포커스
     editTextarea.focus();
 }
 
