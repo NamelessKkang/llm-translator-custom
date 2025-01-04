@@ -344,62 +344,45 @@ async function llmTranslate(text, prompt) {
         }
     }
 
-    // 공급자별 파라미터
+    // 기본 파라미터 설정
+    parameters = {
+        model: model,
+        messages: messages,
+        temperature: params.temperature,
+        stream: false,
+        chat_completion_source: provider
+    };
+
+    // 최대 출력이 0이 아닐 때만 파라미터에 포함
+    if (params.max_length > 0) {
+        parameters.max_tokens = params.max_length;
+    }
+
+    // 공급자별 추가 파라미터
+    const providerParams = getProviderSpecificParams(provider, params);
+    Object.assign(parameters, providerParams);
+
+    // API 키 설정
     switch (provider) {
         case 'openai':
             apiKey = secret_state[SECRET_KEYS.OPENAI];
-            parameters = {
-                model: model,
-                messages: messages,
-                temperature: params.temperature,
-                max_tokens: params.max_length,
-                stream: false,
-                chat_completion_source: 'openai',
-                ...getProviderSpecificParams(provider, params)
-            };
+            parameters.chat_completion_source = 'openai';
             break;
-
         case 'claude':
             apiKey = secret_state[SECRET_KEYS.CLAUDE];
-            parameters = {
-                model: model,
-                messages: messages,
-                temperature: params.temperature,
-                max_tokens: params.max_length,
-                stream: false,
-                chat_completion_source: 'claude',
-                ...getProviderSpecificParams(provider, params)
-            };
+            parameters.chat_completion_source = 'claude';
             break;
-
         case 'google':
             apiKey = secret_state[SECRET_KEYS.MAKERSUITE];
-            parameters = {
-                model: model,
-                messages: messages,
-                temperature: params.temperature,
-                max_tokens: params.max_length,
-                stream: false,
-                chat_completion_source: 'makersuite',
-                ...getProviderSpecificParams(provider, params)
-            };
+            parameters.chat_completion_source = 'makersuite';
             break;
-
         case 'cohere':
             apiKey = secret_state[SECRET_KEYS.COHERE];
-            parameters = {
-                model: model,
-                messages: messages,
-                temperature: params.temperature,
-                max_tokens: params.max_length,
-                stream: false,
-                chat_completion_source: 'cohere',
-                ...getProviderSpecificParams(provider, params)
-            };
+            parameters.chat_completion_source = 'cohere';
             break;
-
+            
         default:
-            throw new Error('지원되지 않습니다.');
+            throw new Error('지원되지 않는 공급자입니다.');
     }
 
     if (!apiKey && !extensionSettings.use_reverse_proxy) {
