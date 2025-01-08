@@ -33,3 +33,7 @@ LLM을 이용해 실리태번에서 바로 번역을 하는 확장
 ## 스크린샷
 
 ![ui 이런 느낌](https://files.catbox.moe/5qaqgj.png)
+
+## License
+
+Copyright (C) 2024-2025 1234anon
