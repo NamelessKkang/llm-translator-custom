@@ -36,4 +36,8 @@ LLM을 이용해 실리태번에서 바로 번역을 하는 확장
 
 ## License
 
-Copyright (C) 2024-2025 1234anon
+Copyright (C) 2024-2025 1234anon  
+Copyright (C) 2023 SillyTavern  
+Based on [SillyTavern](https://github.com/SillyTavern/SillyTavern)  
+Licensed under AGPL-3.0  
+See LICENSE file for details.
