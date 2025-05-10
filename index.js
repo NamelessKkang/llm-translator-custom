@@ -2624,8 +2624,5 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     returns: ARGUMENT_TYPE.STRING,
 }));
 
-// 참고: llmTranslate 함수는 이미 제공된 코드를 사용하며,
-// 이 슬래시 커맨드와 동일한 파일 또는 접근 가능한 스코프에 있어야 합니다.
-// 또한, extensionSettings, secret_state, getRequestHeaders 등도 마찬가지입니다.
 
 logDebug('Slash Commands registered successfully.');
