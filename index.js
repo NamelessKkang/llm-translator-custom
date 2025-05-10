@@ -2599,4 +2599,33 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     returns: '삭제 작업 성공/실패/정보 메시지',
 }));
 
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'llmTranslate',
+    helpString: 'LLM을 사용하여 텍스트를 번역합니다. 확장 프로그램 설정의 LLM 프롬프트 및 공급자 설정을 사용합니다.',
+    unnamedArgumentList: [
+        new SlashCommandArgument('번역할 텍스트', ARGUMENT_TYPE.STRING, true, false, ''),
+    ],
+    callback: async (args, value) => {
+        const prompt = extensionSettings.llm_prompt_chat || 'Please translate the following text to the user\'s preferred language (or a sensible default if not specified):'; // 기본 프롬프트 제공
+        const textToTranslate = String(value);
+
+        if (!textToTranslate.trim()) {
+            return '번역할 텍스트를 입력해주세요.'; // 빈 문자열 입력 방지
+        }
+
+        try {
+            const translatedText = await llmTranslate(textToTranslate, prompt);
+            return translatedText;
+        } catch (error) {
+            console.error('LLMTranslate Slash Command Error:', error);
+            return `LLM 번역 중 오류 발생: ${error.message}`;
+        }
+    },
+    returns: ARGUMENT_TYPE.STRING,
+}));
+
+// 참고: llmTranslate 함수는 이미 제공된 코드를 사용하며,
+// 이 슬래시 커맨드와 동일한 파일 또는 접근 가능한 스코프에 있어야 합니다.
+// 또한, extensionSettings, secret_state, getRequestHeaders 등도 마찬가지입니다.
+
 logDebug('Slash Commands registered successfully.');
