@@ -1,11 +1,26 @@
 <div class="translation_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>LLM Translator</b>
+            <b>LLM Translator - custom_V3</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
-        <div class="inline-drawer-content">
-            <!-- 체크박스 -->
+				
+
+        <div class="inline-drawer-content">		
+
+
+			<!-- Select 요소 추가 -->
+			<hr>
+			<div class="inline-drawer">
+				<label for="translation_display_mode">원문<>번역문 함께 보기</label>
+			</div>
+			<select id="translation_display_mode" class="text_pole">
+				<option value="disabled">사용 안 함</option>
+				<option value="folded">접기 방식</option>
+				<option value="unfolded">펼침 방식</option>
+			</select>
+	<hr>
+		
             <label class="flex-container">
                 <input type="checkbox" id="llm_translation_button_toggle">퀵 입력 번역 버튼 추가
             </label>
@@ -30,17 +45,41 @@
                 <!-- 모델 목록은 동적으로 추가됨 -->
             </select>
 
-            <!-- 채팅 번역 프롬프트 -->
-            <label for="llm_prompt_chat">채팅 번역 프롬프트</label>
-            <textarea id="llm_prompt_chat" placeholder="채팅 번역 지시문을 입력하세요."></textarea>
+             <!-- 채팅 번역 프롬프트 -->
+            <!-- 라벨과 버튼을 한 줄에 배치하기 위한 컨테이너 추가 -->
+            <div class="flex-container align-items-center space-between">
+                 <label for="llm_prompt_chat">채팅 번역 프롬프트</label>
+				<i class="fas fa-edit prompt-editor-button"
+				   data-target-textarea="llm_prompt_chat"
+				   data-modal-title="채팅 번역 프롬프트 편집"
+				   data-for="llm_prompt_chat"
+				   title="채팅 번역 프롬프트 편집"></i>
+            </div>
+            <textarea id="llm_prompt_chat" placeholder="채팅 번역 지시문을 입력하세요." rows="3"></textarea> <!-- rows 속성으로 기본 높이 조절 -->
 
             <!-- 입력 번역 프롬프트 -->
-            <label for="llm_prompt_input">입력 번역 프롬프트</label>
-            <textarea id="llm_prompt_input" placeholder="입력 번역 지시문을 입력하세요."></textarea>
+            <!-- 라벨과 버튼을 한 줄에 배치하기 위한 컨테이너 추가 -->
+            <div class="flex-container align-items-center space-between">
+                <label for="llm_prompt_input">입력 번역 프롬프트</label>
+				<i class="fas fa-edit prompt-editor-button"
+				   data-target-textarea="llm_prompt_input"
+				   data-modal-title="입력 번역 프롬프트 편집"
+				   data-for="llm_prompt_input"
+				   title="입력 번역 프롬프트 편집"></i>
+            </div>
+            <textarea id="llm_prompt_input" placeholder="입력 번역 지시문을 입력하세요." rows="3"></textarea> <!-- rows 속성으로 기본 높이 조절 -->
 
-            <!-- 프리필 -->
-            <label for="llm_prefill_content">프리필</label>
-            <textarea id="llm_prefill_content" placeholder="프리필을 입력하세요."></textarea>
+            <!-- 프리필 (필요하다면 여기도 동일하게 적용 가능) -->
+            <div class="flex-container align-items-center space-between">
+                <label for="llm_prefill_content">프리필</label>
+				 <i class="fas fa-edit prompt-editor-button"
+				   data-target-textarea="llm_prefill_content"
+				   data-modal-title="프리필 내용 편집"
+				   data-for="llm_prefill_content"
+				   title="프리필 내용 편집"></i>
+            </div>
+            <textarea id="llm_prefill_content" placeholder="프리필을 입력하세요." rows="3"></textarea>
+
 
             <!-- 파라미터 설정 섹션 -->
             <div class="parameter-settings">
@@ -49,8 +88,8 @@
                     <div class="parameter-row">
                         <div class="parameterbox flex-container gap0">
                             <small>Max Response Length</small>
-                            <input type="range" id="max_length_openai_slider" class="neo-range-slider" min="0" max="4000" step="1">
-                            <input type="number" id="max_length_openai" class="neo-range-input" min="0" max="4000" step="1">
+                            <input type="range" id="max_length_openai_slider" class="neo-range-slider" min="0" max="16000" step="1">
+                            <input type="number" id="max_length_openai" class="neo-range-input" min="0" max="16000" step="1">
                         </div>
                         <div class="parameterbox flex-container gap0">
                             <small>Temperature</small>
@@ -84,8 +123,8 @@
                     <div class="parameter-row">
                         <div class="parameterbox flex-container gap0">
                             <small>Max Response Length</small>
-                            <input type="range" id="max_length_claude_slider" class="neo-range-slider" min="1" max="4000" step="1">
-                            <input type="number" id="max_length_claude" class="neo-range-input" min="1" max="4000" step="1">
+                            <input type="range" id="max_length_claude_slider" class="neo-range-slider" min="1" max="16000" step="1">
+                            <input type="number" id="max_length_claude" class="neo-range-input" min="1" max="16000" step="1">
                         </div>
                         <div class="parameterbox flex-container gap0">
                             <small>Temperature</small>
@@ -112,8 +151,8 @@
                     <div class="parameter-row">
                         <div class="parameterbox flex-container gap0">
                             <small>Max Response Length</small>
-                            <input type="range" id="max_length_cohere_slider" class="neo-range-slider" min="0" max="4000" step="1">
-                            <input type="number" id="max_length_cohere" class="neo-range-input" min="0" max="4000" step="1">
+                            <input type="range" id="max_length_cohere_slider" class="neo-range-slider" min="0" max="16000" step="1">
+                            <input type="number" id="max_length_cohere" class="neo-range-input" min="0" max="16000" step="1">
                         </div>
                         <div class="parameterbox flex-container gap0">
                             <small>Temperature</small>
@@ -152,8 +191,8 @@
                     <div class="parameter-row">
                         <div class="parameterbox flex-container gap0">
                             <small>Max Response Length</small>
-                            <input type="range" id="max_length_google_slider" class="neo-range-slider" min="0" max="4000" step="1">
-                            <input type="number" id="max_length_google" class="neo-range-input" min="0" max="4000" step="1">
+                            <input type="range" id="max_length_google_slider" class="neo-range-slider" min="0" max="16000" step="1">
+                            <input type="number" id="max_length_google" class="neo-range-input" min="0" max="16000" step="1">
                         </div>
                         <div class="parameterbox flex-container gap0">
                             <small>Temperature</small>
@@ -203,6 +242,31 @@
                 <i class="fa-solid fa-trash-can"></i>
                 <span>번역 삭제</span>
             </div>
+			
+			
+            <!-- 다운로드/복원 버튼 추가 -->
+            <hr><div class="translation-backup-buttons">
+			  <button id="llm_translation_download" class="menu_button">
+				<i class="fa-solid fa-download"></i>
+				<span>번역DB 다운로드</span>
+			  </button>
+			  <label for="llm_translation_restore" class="menu_button">
+				<i class="fa-solid fa-upload"></i>
+				<span>번역DB 복원</span>
+			  </label>
+			  <input type="file" id="llm_translation_restore" style="display:none;">
+			  <button id="llm_translation_delete" class="menu_button">
+				<i class="fa-solid fa-trash"></i>
+				<span>번역DB 삭제</span>
+			  </button>
+			</div>
+				   
+			<hr>
+			<div id="llm_translator_db_tool_setup_button" class="menu_button">
+				<i class="fa-solid fa-tools"></i> <!-- 적절한 아이콘으로 변경 가능 -->
+				<span>DB 관리 도구 준비</span>
+			</div>
+			<hr>
         </div>
     </div>
 </div>

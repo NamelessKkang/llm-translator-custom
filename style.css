@@ -110,3 +110,58 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtons {
     gap: 10px;
     flex-direction: row;
 }
+
+
+
+
+
+
+
+
+/* LLM 번역기 확장 기능: details 기본 화살표 숨기기 (SillyTavern 적용 후) */
+.custom-llm-translator-details > summary.custom-llm-translator-summary {
+  list-style: none; /* 대부분의 브라우저용 */
+  -webkit-appearance: none; /* Safari 등 Webkit 추가 처리 */
+  appearance: none; /* 표준 */
+}
+
+/* Webkit 기반 브라우저 (Chrome, Safari, Edge)용 가상 선택자 */
+.custom-llm-translator-details > summary.custom-llm-translator-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Firefox 및 표준 가상 선택자 */
+.custom-llm-translator-details > summary.custom-llm-translator-summary::marker {
+  display: none;
+}
+
+/* 클릭 가능한 커서 추가 */
+.custom-llm-translator-summary {
+  cursor: pointer;
+  /* 기본 display 속성 유지 또는 필요시 block/inline-block 설정 */
+  display: block; /* summary 기본 동작 유지 */
+}
+
+
+
+/* llm-translator/style.css */
+/* 명시성으로 유저커스텀css 제어 ex: 	#chat .mes .custom-mode-folded .custom-original_text  로 덮어쓰기 가능*/
+.custom-mode-folded .custom-original_text {
+  display: inline-block;
+  vertical-align: top; /* inline-block 요소 정렬 */
+  margin-bottom: 10px; /* 예시: 블록 간 최소 간격 */
+  /* 여기에 다른 '최소한의 조정' 스타일 추가 */
+}
+
+/*	덮어쓰기용: #chat .mes .custom-original_text.custom-mode-unfolded {	*/
+.custom-mode-unfolded.custom-original_text {
+  display: inline-block;
+  vertical-align: top; /* inline-block 요소 정렬 */
+  margin-bottom: 1px; /* 예시: 블록 간 최소 간격 */
+  /* 여기에 다른 '최소한의 조정' 스타일 추가 */
+}
+
+
+.prompt-editor-button {
+    cursor: pointer; 
+}

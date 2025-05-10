@@ -1,11 +1,11 @@
 {
-    "display_name": "llm-translator",
+    "display_name": "llm-translator-custom",
     "loading_order": 9,
     "requires": [],
     "optional": [],
     "js": "index.js",
-    "author": "1234anon",
-    "version": "1.3.5",
-    "homePage": "https://github.com/1234anon/llm-translator",
-    "auto_update": true
+    "author": "NamelessKkang (forked from 1234anon)",
+    "version": "1.3.5-custom-v3",
+    "homePage": "https://github.com/NamelessKkang/llm-translator-custom",
+    "auto_update": false
 }

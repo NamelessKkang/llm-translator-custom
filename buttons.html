@@ -1,3 +1,4 @@
+
 <div id="llm_translate_chat" class="list-group-item flex-container flexGap5">
     <div class="fa-solid fa-brain extensionsMenuExtensionButton"></div>
     <span>LLM으로 전체 번역</span>
@@ -6,3 +7,259 @@
     <div class="fa-solid fa-comment-dots extensionsMenuExtensionButton"></div>
     <span>LLM으로 입력 번역</span>
 </div>
+
+
+<div id="llm_translate_qr2" class="list-group-item flex-container flexGap5">
+    <div class="fa-solid fa-redo extensionsMenuExtensionButton"></div>
+    <span>◆◇◆_LLM선택</span>
+</div>
+<div id="llm_translate_qr1" class="list-group-item flex-container flexGap5">
+    <div class="fa-solid fa-rotate extensionsMenuExtensionButton"></div>
+    <span>■□■_LLM막챗</span>
+</div>
+
+<div id="llm_translate_css-add1" class="list-group-item flex-container flexGap5">
+    <div class="fa-solid fa-redo extensionsMenuExtensionButton"></div>
+    <span>가로휠적용</span>
+</div>
+
+
+<script>
+(function() {
+    // console.log("Bookmarklet Start v3 (◆◇◆ Logic Restored & Improved)");
+
+    // --- Helper Functions (Used by ■□■, can be used by ◆◇◆ if needed) ---
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    async function findAndClickInnerButtonWithRetry(outerSelector, innerSelector, maxRetries = 5, retryDelay = 300) {
+        // console.log(`[InnerRetry] Attempting to find inner button: "${innerSelector}" within "${outerSelector}"`);
+        for (let i = 0; i < maxRetries; i++) {
+            const outerElement = document.querySelector(outerSelector);
+            if (!outerElement) {
+                // console.warn(`[InnerRetry] Outer element "${outerSelector}" not found. Attempt ${i + 1}/${maxRetries}`);
+                if (i < maxRetries - 1) await delay(retryDelay);
+                continue;
+            }
+            const innerButton = outerElement.querySelector(innerSelector);
+            if (innerButton) {
+                // console.log(`[InnerRetry] Inner button "${innerSelector}" found on attempt ${i + 1}. Simulating click.`);
+                innerButton.click();
+                // console.log(`[InnerRetry] Inner button click simulated successfully.`);
+                return true;
+            }
+            if (i < maxRetries - 1) {
+                // console.log(`[InnerRetry] Inner button not found, waiting ${retryDelay}ms before next attempt.`);
+                await delay(retryDelay);
+            }
+        }
+        console.error(`[InnerRetry] Inner button "${innerSelector}" not found within "${outerSelector}" after ${maxRetries} attempts.`); // Keep final error
+        return false;
+    }
+    // --- Helper Functions End ---
+
+
+    const qr1Div = document.getElementById('llm_translate_qr1');
+    const qr2Div = document.getElementById('llm_translate_qr2');
+    const css1Div = document.getElementById('llm_translate_css-add1');
+
+    // --- '■□■_LLM막챗' Logic (No changes) ---
+    if (css1Div) {
+        css1Div.addEventListener('click', function(event) {
+				
+			//★LLM확장용 아님!!! 커스텀CSS
+			const scrollContainer = document.querySelector('.qr--buttons');
+
+			scrollContainer.addEventListener('wheel', (e) => {
+				e.preventDefault();
+				scrollContainer.scrollLeft += e.deltaY; // 휠의 세로 움직임을 가로 스크롤로 변환
+			});
+            console.log("'가로 스크롤 마우스 휠 setting 완료");
+        });
+    } else {
+        // console.warn("'llm_translate_qr1' div not found.");
+    }
+
+    // --- '■□■_LLM막챗' Logic (No changes) ---
+    if (qr1Div) {
+        qr1Div.addEventListener('click', function(event) {
+            event.preventDefault();
+            // console.log("'■□■_LLM막챗' div clicked. Calling button setup function.");
+            setupLastChatTranslateButton(); // Call function method maintained
+        });
+    } else {
+        // console.warn("'llm_translate_qr1' div not found.");
+    }
+
+    // Function to find the "■□■" button, change it to "LLM번역(L)", and add the correct listener (No changes)
+    function setupLastChatTranslateButton() {
+        // console.log("setupLastChatTranslateButton function execution attempt...");
+        const allQrButtonElements = document.querySelectorAll('#qr--bar .qr--button.menu_button.interactable');
+        let targetButtonElement = null;
+
+        for (const buttonEl of allQrButtonElements) {
+            const labelElement = buttonEl.querySelector('.qr--button-label');
+            if (labelElement && labelElement.textContent.trim() === "■□■") {
+                targetButtonElement = buttonEl;
+                // console.log("Found button element with '■□■' label:", targetButtonElement);
+                break;
+            }
+        }
+
+        if (targetButtonElement) {
+            try {
+                const labelToChange = targetButtonElement.querySelector('.qr--button-label');
+                if (labelToChange) {
+                    labelToChange.textContent = "LLM번역(L)";
+                    // console.log("Button inner label text changed to 'LLM번역(L)'.");
+                } else {
+                    // console.warn("Failed to find inner label element to change text for '■□■' button.");
+                }
+
+                const newButtonElement = targetButtonElement.cloneNode(true);
+                // console.log("'■□■' button element cloned.");
+
+                if (targetButtonElement.parentNode) {
+                    targetButtonElement.parentNode.replaceChild(newButtonElement, targetButtonElement);
+                    // console.log("Replaced original '■□■' button element with clone.");
+                } else {
+                     console.error("Could not find parentNode of the original '■□■' button to replace."); // Keep error
+                     return;
+                }
+
+                newButtonElement.addEventListener('click', async function(event) { // async added
+                    event.preventDefault();
+                    // console.log('>>> "LLM번역(L)" button clicked! <<<');
+                    try {
+                        const success = await findAndClickInnerButtonWithRetry(
+                            '#chat .mes:last-child', '.mes_llm_translate', 5, 300
+                        );
+                        if (!success) {
+                            console.error('Failed to find or click the last message LLM translation button after retries.'); // Keep error
+                            alert('마지막 메시지의 LLM 번역 버튼을 실행하는 데 실패했습니다. 메시지가 완전히 로드되지 않았을 수 있습니다.');
+                        }
+                    } catch (listenerError) {
+                        console.error('>>> Internal error occurred in "LLM번역(L)" listener: <<<', listenerError); // Keep error
+                        alert('번역 버튼 클릭 처리 중 오류가 발생했습니다.');
+                    }
+                });
+                // console.log("Listener added to the cloned 'LLM번역(L)' button element (with retry logic).");
+            } catch (error) {
+                 console.error("Error processing '■□■' button:", error); // Keep error
+            }
+        } else {
+            // console.log("Could not find button element with '■□■' label.");
+            alert('QR 바에서 "■□■" 버튼을 찾을 수 없습니다.'); // User notification added
+        }
+    } // setupLastChatTranslateButton function definition end
+
+
+    // --- '◆◇◆_LLM선택' Logic (Original functionality restored + Listener improvements applied) ---
+    if (qr2Div) {
+        qr2Div.addEventListener('click', function(event) {
+            event.preventDefault();
+            // console.log("'◆◇◆_LLM선택' div clicked.");
+
+            const allQrButtonElements = document.querySelectorAll('#qr--bar .qr--button.menu_button.interactable');
+            let targetButtonElement = null; // ★ Improvement: Find the button element itself
+
+            // ★ Improvement: Iterate through button elements checking inner label text
+            for (const buttonEl of allQrButtonElements) {
+                const labelElement = buttonEl.querySelector('.qr--button-label');
+                if (labelElement && labelElement.textContent.trim() === "◆◇◆") {
+                    targetButtonElement = buttonEl;
+                    // console.log("Found button element with '◆◇◆' label:", targetButtonElement);
+                    break;
+                }
+            }
+
+            if (targetButtonElement) {
+                try {
+                    // Change button inner label text
+                    const labelToChange = targetButtonElement.querySelector('.qr--button-label');
+                    if (labelToChange) {
+                        labelToChange.textContent = "LLM번역"; // Change ◆◇◆ -> LLM번역
+                        // console.log("'◆◇◆' button inner label text changed to 'LLM번역'.");
+                    } else {
+                        // console.warn("Failed to find inner label element to change text for '◆◇◆' button.");
+                    }
+
+                    // ★ Improvement: Clone the button element itself and replace
+                    const newButtonElement = targetButtonElement.cloneNode(true);
+                    // console.log("'◆◇◆' button element cloned.");
+
+                    if (targetButtonElement.parentNode) {
+                        targetButtonElement.parentNode.replaceChild(newButtonElement, targetButtonElement);
+                        // console.log("Replaced original '◆◇◆' button element with clone.");
+                    } else {
+                        console.error("Could not find parentNode of the original '◆◇◆' button to replace."); // Keep error
+                        return; // Cannot proceed
+                    }
+
+                    // ★ Improvement: Add listener to the cloned *button element*
+                    newButtonElement.addEventListener('click', function(event) {
+                        event.preventDefault(); // Prevent default button action (if any)
+                        // console.log('>>> "LLM번역" button clicked! <<<');
+
+                        // --- ▼ Original ◆◇◆ Logic Start ▼ ---
+                        const m = prompt('번역할 메시지 ID를 입력하세요 (마지막 메시지는 \'last\' 입력).', 'last');
+                        let targetInnerButton; // Translate button inside the message
+
+                        if (m === null) { // If user pressed Cancel in the prompt
+                            // console.log("Message ID input cancelled.");
+                            return;
+                        }
+
+                        if (m.toLowerCase() === 'last') { // Handle 'last' case-insensitively
+                            const lastMessage = document.querySelector('#chat .mes:last-child');
+                            if (lastMessage) {
+                                targetInnerButton = lastMessage.querySelector('.mes_llm_translate');
+                                if (targetInnerButton) {
+                                    // console.log("Attempting to click last message translate button.");
+                                    targetInnerButton.click();
+                                } else {
+                                    alert('마지막 메시지에서 LLM 번역 버튼(.mes_llm_translate)을 찾을 수 없습니다.');
+                                }
+                            } else {
+                                alert('채팅 메시지가 없습니다.');
+                            }
+                        } else { // If a message ID is entered
+                            // Optionally, simple validation if input is a number or valid ID format
+                            // if (!/^\d+$/.test(m)) {
+                            //    alert("유효한 메시지 ID(숫자)를 입력해주세요.");
+                            //    return;
+                            // }
+                            const messageById = document.querySelector(`#chat .mes[mesid='${m}']`);
+                            if (messageById) {
+                                targetInnerButton = messageById.querySelector('.mes_llm_translate');
+                                if (targetInnerButton) {
+                                    // console.log(`Attempting to click translate button for message ID '${m}'.`);
+                                    targetInnerButton.click();
+                                } else {
+                                    alert(`메시지 ID '${m}'에서 LLM 번역 버튼(.mes_llm_translate)을 찾을 수 없습니다.`);
+                                }
+                            } else {
+                                alert(`메시지 ID '${m}'을(를) 찾을 수 없습니다.`);
+                            }
+                        }
+                        // --- ▲ Original ◆◇◆ Logic End ▲ ---
+                    });
+                    // console.log("Listener added to the cloned 'LLM번역' button element.");
+
+                } catch (error) {
+                    console.error("Error processing '◆◇◆' button:", error); // Keep error
+                    alert('◆◇◆ 버튼 설정 중 오류가 발생했습니다.'); // User notification
+                }
+
+            } else {
+                // console.log("Could not find button element with '◆◇◆' label.");
+                alert('QR 바에서 "◆◇◆" 버튼을 찾을 수 없습니다.'); // User notification added
+            }
+        });
+    } else {
+         // console.warn("'llm_translate_qr2' div not found.");
+    }
+
+    // console.log("Bookmarklet loaded.");
+})();
+</script>
