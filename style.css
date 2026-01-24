@@ -163,5 +163,134 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtons {
 
 
 .prompt-editor-button {
-    cursor: pointer; 
+    cursor: pointer;
+    padding: 5px;
+    color: var(--text-color);
+    transition: color 0.3s ease;
+}
+
+.prompt-editor-button:hover {
+    color: var(--accent-color);
+}
+
+.gap5 {
+    gap: 5px;
+}
+
+/* 프롬프트 레이블 여백 */
+#llm_prompt_editor_label,
+label[for="llm_rule_prompt"] {
+    display: block;
+    margin: 15px 0;
+}
+
+/* 아이콘 수직 정렬 */
+.prompt-editor-button,
+.rule-prompt-editor-button,
+.fa-info-circle {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+}
+
+.flex-container.align-items-center {
+    align-items: center;
+    min-height: 20px;
+}
+
+.prompt-select-container {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.prompt-select-container select {
+    flex: 1;
+}
+
+.small-button {
+    padding: 2px 8px;
+    font-size: 14px;
+    min-width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.small-button:hover {
+    background: var(--background-tertiary);
+}
+
+/* 프롬프트 추가 폼 스타일 */
+.prompt-add-dialog {
+    padding: 15px;
+}
+
+.prompt-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+}
+
+.prompt-title {
+    font-size: 1.1em;
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+.prompt-form-group {
+    width: 100%;
+    margin: 0;
+}
+
+.prompt-form-group input.wide {
+    width: 100%;
+    background: var(--background-primary, #1a1a1a);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 8px 12px;
+    border-radius: 4px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    min-height: 36px;
+}
+
+/* SillyTavern 팝업 버튼 스타일 재정의 */
+.prompt-add-dialog ~ .popup_footer .menu_button {
+    min-width: 60px;
+    white-space: nowrap;
+    padding: 5px 15px;
+    margin: 0;
+}
+
+.prompt-form-group input::placeholder {
+    color: var(--text-color-secondary, #888888);
+    opacity: 0.7;
+}
+
+/* 프리셋 관리 */
+.preset-manager-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.preset-controls {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.preset-controls select {
+    flex: 1;
 }
