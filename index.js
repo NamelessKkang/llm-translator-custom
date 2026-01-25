@@ -4892,7 +4892,18 @@ class PresetManager {
         }
 
         // 현재 설정으로 프리셋 업데이트
-        preset.settings = simpleDeepClone(extensionSettings);
+        const settingsSnapshot = simpleDeepClone(extensionSettings);
+        
+        if (settingsSnapshot.presets) {
+            delete settingsSnapshot.presets;
+        }
+        if (settingsSnapshot.customPrompts) {
+            delete settingsSnapshot.customPrompts;
+        }
+
+        // 현재 설정으로 프리셋 업데이트 (버전도 최신으로 갱신 권장)
+        preset.version = 2; 
+        preset.settings = settingsSnapshot;
         preset.customPrompts = simpleDeepClone(extensionSettings.customPrompts || []);
 
         this.saveToSettings();
