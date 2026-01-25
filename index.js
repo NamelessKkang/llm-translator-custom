@@ -4254,27 +4254,76 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
      */
     returns: '삭제 작업 성공/실패/정보 메시지',
 }));
-
+// 기존 llmTranslate 수정: prompt 인수 추가
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'llmTranslate',
-    helpString: 'LLM을 사용하여 텍스트를 번역합니다. 확장 프로그램 설정의 LLM 프롬프트 및 공급자 설정을 사용합니다.',
+    helpString: 'LLM을 사용하여 텍스트를 번역합니다. 기본적으로 채팅 번역 설정을 따르며, prompt 인수로 프롬프트를 직접 지정할 수 있습니다.\n사용법: /llmTranslate "텍스트" [prompt="프롬프트 내용"]',
     unnamedArgumentList: [
         new SlashCommandArgument('번역할 텍스트', ARGUMENT_TYPE.STRING, true, false, ''),
     ],
+    namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({
+            name: 'prompt',
+            description: '사용할 커스텀 프롬프트 (생략 시 기본 채팅 번역 프롬프트 사용)',
+            isRequired: false,
+            typeList: [ARGUMENT_TYPE.STRING],
+        })
+    ],
     callback: async (args, value) => {
-        const prompt = extensionSettings.llm_prompt_chat || 'Please translate the following text to the user\'s preferred language (or a sensible default if not specified):'; // 기본 프롬프트 제공
+        // args.prompt가 있으면 그것을 사용, 없으면 함수 내부 기본값(llm_prompt_chat) 사용을 위해 undefined 전달
+        const customPrompt = args.prompt || undefined;
         const textToTranslate = String(value);
 
         if (!textToTranslate.trim()) {
-            return '번역할 텍스트를 입력해주세요.'; // 빈 문자열 입력 방지
+            return '번역할 텍스트를 입력해주세요.';
         }
 
         try {
-            const translatedText = await translate(textToTranslate, { prompt: prompt });
+            // translate 함수는 prompt 옵션이 없으면 기본적으로 llm_prompt_chat을 사용함
+            const translatedText = await translate(textToTranslate, { prompt: customPrompt });
             return translatedText;
         } catch (error) {
             console.error('LLMTranslate Slash Command Error:', error);
             return `LLM 번역 중 오류 발생: ${error.message}`;
+        }
+    },
+    returns: ARGUMENT_TYPE.STRING,
+}));
+
+// 신규 llmTranslateInput 추가: 입력 번역용
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'llmTranslateInput',
+    helpString: 'LLM을 사용하여 텍스트를 입력용(주로 영어)으로 번역합니다. 기본적으로 입력 번역 설정을 따르며, prompt 인수로 프롬프트를 직접 지정할 수 있습니다.\n사용법: /llmTranslateInput "텍스트" [prompt="프롬프트 내용"]',
+    unnamedArgumentList: [
+        new SlashCommandArgument('번역할 텍스트', ARGUMENT_TYPE.STRING, true, false, ''),
+    ],
+    namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({
+            name: 'prompt',
+            description: '사용할 커스텀 프롬프트 (생략 시 기본 입력 번역 프롬프트 사용)',
+            isRequired: false,
+            typeList: [ARGUMENT_TYPE.STRING],
+        })
+    ],
+    callback: async (args, value) => {
+        // args.prompt가 있으면 사용, 없으면 설정의 입력 번역 프롬프트 사용
+        const inputPrompt = args.prompt || extensionSettings.llm_prompt_input || 'Please translate the following text to english:';
+        const textToTranslate = String(value);
+
+        if (!textToTranslate.trim()) {
+            return '번역할 텍스트를 입력해주세요.';
+        }
+
+        try {
+            // isInputTranslation: true를 전달하여 컨텍스트 처리(마지막 메시지 제외 등)가 입력 번역에 맞게 동작하도록 함
+            const translatedText = await translate(textToTranslate, { 
+                prompt: inputPrompt,
+                isInputTranslation: true 
+            });
+            return translatedText;
+        } catch (error) {
+            console.error('LLMTranslateInput Slash Command Error:', error);
+            return `LLM 입력 번역 중 오류 발생: ${error.message}`;
         }
     },
     returns: ARGUMENT_TYPE.STRING,
