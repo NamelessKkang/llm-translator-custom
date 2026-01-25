@@ -4793,16 +4793,27 @@ class PresetManager {
 
         presetName = presetName.trim();
 
-        const currentSettings = simpleDeepClone(extensionSettings);
-        const currentCustomPrompts = simpleDeepClone(extensionSettings.customPrompts || []);
+    
+    const settingsSnapshot = simpleDeepClone(extensionSettings);
+    
+		// 저장할 데이터에서 'presets' 배열을 삭제 (재귀방지)
+		if (settingsSnapshot.presets) {
+			delete settingsSnapshot.presets;
+		}
 
-        const newPreset = {
-            id: `preset_${Date.now()}`,
-            name: presetName,
-            settings: currentSettings,
-            customPrompts: currentCustomPrompts
-        };
+		if (settingsSnapshot.customPrompts) {
+			delete settingsSnapshot.customPrompts;
+		}
 
+		const newPreset = {
+			id: `preset_${Date.now()}`,
+			name: presetName,
+			version: 2, // V2 버전 태그
+			settings: settingsSnapshot, // presets가 없는 깔끔한 설정
+			customPrompts: extensionSettings.customPrompts || [] // 프롬프트는 따로 저장
+		};
+
+		// 내 목록에 추가하고 저장
         this.presets.push(newPreset);
         this.saveToSettings();
         this.updatePresetDropdown();
@@ -4827,10 +4838,21 @@ class PresetManager {
             promptManager.loadFromSettings();
         }
 
-        Object.keys(extensionSettings).forEach(key => {
-            delete extensionSettings[key];
-        });
-        Object.assign(extensionSettings, loadedSettings);
+
+		// 설정을 덮어쓰기 전에, 지금 내가 가지고 있는 프리셋 목록을 '대피'시킵니다.
+		const myCurrentPresets = this.presets; 
+
+		// 기존 설정 싹 지우기
+		Object.keys(extensionSettings).forEach(key => {
+			delete extensionSettings[key];
+		});
+
+		// 설정 덮어쓰기
+		Object.assign(extensionSettings, loadedSettings);
+
+		// 대피시켜둔 프리셋 목록을 다시 넣어줍니다.
+		extensionSettings.presets = myCurrentPresets;
+		this.presets = myCurrentPresets; // 클래스 변수도 동기화
 
         loadSettings();
 
