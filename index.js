@@ -4879,30 +4879,33 @@ class PresetManager {
             return;
         }
 
+        // 1. 프리셋에서 데이터 추출
         const loadedSettings = simpleDeepClone(preset.settings);
         const loadedCustomPrompts = simpleDeepClone(preset.customPrompts || []);
 
+        // 2. 현재 내 프리셋 목록 백업 (설정 초기화 시 날아가지 않도록)
+        const myCurrentPresets = this.presets; 
+
+        // 3. 기존 설정 싹 지우기 (여기서 customPrompts도 같이 지워짐)
+        Object.keys(extensionSettings).forEach(key => {
+            delete extensionSettings[key];
+        });
+
+        // 4. 설정 덮어쓰기 (이 시점에는 loadedSettings 안에 customPrompts가 없음)
+        Object.assign(extensionSettings, loadedSettings);
+
+        // 5. [중요 수정] 백업해둔 데이터 복구 (순서 중요: Object.assign 이후에 실행)
+        extensionSettings.presets = myCurrentPresets;
         extensionSettings.customPrompts = loadedCustomPrompts;
+
+        // 6. 클래스 변수 동기화 및 매니저 리로드
+        this.presets = myCurrentPresets; 
+        
         if (promptManager) {
-            promptManager.loadFromSettings();
+            promptManager.loadFromSettings(); 
         }
 
-
-		// 설정을 덮어쓰기 전에, 지금 내가 가지고 있는 프리셋 목록을 '대피'시킵니다.
-		const myCurrentPresets = this.presets; 
-
-		// 기존 설정 싹 지우기
-		Object.keys(extensionSettings).forEach(key => {
-			delete extensionSettings[key];
-		});
-
-		// 설정 덮어쓰기
-		Object.assign(extensionSettings, loadedSettings);
-
-		// 대피시켜둔 프리셋 목록을 다시 넣어줍니다.
-		extensionSettings.presets = myCurrentPresets;
-		this.presets = myCurrentPresets; // 클래스 변수도 동기화
-
+        // 7. UI 및 설정 저장
         loadSettings();
 
         if (promptManager && typeof promptManager.loadPromptToEditor === 'function') {
