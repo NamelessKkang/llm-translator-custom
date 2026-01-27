@@ -4828,6 +4828,46 @@ class PresetManager {
     }
 
     async saveCurrentPreset() {
+		// --- [디버깅 로그 시작] ---
+        console.group('🛑 [LLM Translator] 프리셋 저장/갱신 데이터 검증');
+        
+        // 1. extensionSettings 상태 확인
+        const extPrompts = extensionSettings.customPrompts || [];
+        console.log('1. extensionSettings.customPrompts (설정 변수):');
+        console.log('   - 참조(Reference):', extPrompts);
+        console.log('   - 개수:', extPrompts.length);
+        if (extPrompts.length > 0) {
+            console.log('   - 마지막 아이템:', extPrompts[extPrompts.length - 1].title);
+        }
+
+        // 2. promptManager 상태 확인
+        const pmPrompts = (typeof promptManager !== 'undefined' && promptManager) ? promptManager.customPrompts : 'promptManager 없음';
+        console.log('2. promptManager.customPrompts (매니저 원본):');
+        console.log('   - 참조(Reference):', pmPrompts);
+        console.log('   - 개수:', Array.isArray(pmPrompts) ? pmPrompts.length : 'N/A');
+        if (Array.isArray(pmPrompts) && pmPrompts.length > 0) {
+            console.log('   - 마지막 아이템:', pmPrompts[pmPrompts.length - 1].title);
+        }
+
+        // 3. 비교 분석
+        if (Array.isArray(pmPrompts)) {
+            const isRefSame = extPrompts === pmPrompts;
+            const isContentSame = JSON.stringify(extPrompts) === JSON.stringify(pmPrompts);
+            
+            console.log(`3. 진단 결과:`);
+            console.log(`   - 메모리 주소 일치 여부 (===): ${isRefSame ? '✅ 일치 (같은 객체)' : '❌ 불일치 (다른 객체)'}`);
+            console.log(`   - 데이터 내용 일치 여부: ${isContentSame ? '✅ 일치' : '❌ 불일치 (데이터가 다름!)'}`);
+
+            if (!isRefSame && !isContentSame) {
+                console.error('🚨 [치명적] extensionSettings가 promptManager의 최신 데이터를 반영하지 못하고 있습니다!');
+                console.error('   -> 지금 저장하면 extensionSettings의 구버전 데이터가 저장됩니다.');
+            } else if (!isRefSame && isContentSame) {
+                console.warn('⚠️ [주의] 데이터 내용은 같지만 참조가 끊어져 있습니다. 추후 동기화 문제가 발생할 수 있습니다.');
+            }
+        }
+        console.groupEnd();
+        // --- [디버깅 로그 끝] ---
+		
         let presetName = await callGenericPopup(
             '저장할 프리셋의 이름을 입력하세요:',
             POPUP_TYPE.INPUT,
@@ -4921,6 +4961,48 @@ class PresetManager {
 
     // 선택된 프리셋을 현재 설정으로 업데이트 (확인창 있음)
     async updateSelectedPreset() {
+		
+		// --- [디버깅 로그 시작] ---
+        console.group('🛑 [LLM Translator] 프리셋 저장/갱신 데이터 검증');
+        
+        // 1. extensionSettings 상태 확인
+        const extPrompts = extensionSettings.customPrompts || [];
+        console.log('1. extensionSettings.customPrompts (설정 변수):');
+        console.log('   - 참조(Reference):', extPrompts);
+        console.log('   - 개수:', extPrompts.length);
+        if (extPrompts.length > 0) {
+            console.log('   - 마지막 아이템:', extPrompts[extPrompts.length - 1].title);
+        }
+
+        // 2. promptManager 상태 확인
+        const pmPrompts = (typeof promptManager !== 'undefined' && promptManager) ? promptManager.customPrompts : 'promptManager 없음';
+        console.log('2. promptManager.customPrompts (매니저 원본):');
+        console.log('   - 참조(Reference):', pmPrompts);
+        console.log('   - 개수:', Array.isArray(pmPrompts) ? pmPrompts.length : 'N/A');
+        if (Array.isArray(pmPrompts) && pmPrompts.length > 0) {
+            console.log('   - 마지막 아이템:', pmPrompts[pmPrompts.length - 1].title);
+        }
+
+        // 3. 비교 분석
+        if (Array.isArray(pmPrompts)) {
+            const isRefSame = extPrompts === pmPrompts;
+            const isContentSame = JSON.stringify(extPrompts) === JSON.stringify(pmPrompts);
+            
+            console.log(`3. 진단 결과:`);
+            console.log(`   - 메모리 주소 일치 여부 (===): ${isRefSame ? '✅ 일치 (같은 객체)' : '❌ 불일치 (다른 객체)'}`);
+            console.log(`   - 데이터 내용 일치 여부: ${isContentSame ? '✅ 일치' : '❌ 불일치 (데이터가 다름!)'}`);
+
+            if (!isRefSame && !isContentSame) {
+                console.error('🚨 [치명적] extensionSettings가 promptManager의 최신 데이터를 반영하지 못하고 있습니다!');
+                console.error('   -> 지금 저장하면 extensionSettings의 구버전 데이터가 저장됩니다.');
+            } else if (!isRefSame && isContentSame) {
+                console.warn('⚠️ [주의] 데이터 내용은 같지만 참조가 끊어져 있습니다. 추후 동기화 문제가 발생할 수 있습니다.');
+            }
+        }
+        console.groupEnd();
+        // --- [디버깅 로그 끝] ---
+		
+		
         const selectedId = $('#llm_preset_select').val();
         if (!selectedId) {
             toastr.warning('업데이트할 프리셋을 선택하세요.');
