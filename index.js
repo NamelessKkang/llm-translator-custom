@@ -4828,6 +4828,7 @@ class PresetManager {
     }
 
     async saveCurrentPreset() {
+    /*
 		// --- [디버깅 로그 시작] ---
         console.group('🛑 [LLM Translator] 프리셋 저장/갱신 데이터 검증');
         
@@ -4867,48 +4868,55 @@ class PresetManager {
         }
         console.groupEnd();
         // --- [디버깅 로그 끝] ---
+		*/
 		
-        let presetName = await callGenericPopup(
-            '저장할 프리셋의 이름을 입력하세요:',
-            POPUP_TYPE.INPUT,
-            '',
-            { wide: false, large: false }
-        );
+		// 팝업 띄우기 BEFORE 스냅샷
+		let presetName = await callGenericPopup(
+			'저장할 프리셋의 이름을 입력하세요:',
+			POPUP_TYPE.INPUT,
+			'',
+			{ wide: false, large: false }
+		);
 
-        if (!presetName || presetName.trim() === '') {
-            toastr.info('프리셋 저장이 취소되었습니다.');
-            return;
-        }
-
-        presetName = presetName.trim();
-
-    
-    const settingsSnapshot = simpleDeepClone(extensionSettings);
-    
-		// 저장할 데이터에서 'presets' 배열을 삭제 (재귀방지)
-		if (settingsSnapshot.presets) {
-			delete settingsSnapshot.presets;
+		if (!presetName || presetName.trim() === '') {
+			toastr.info('프리셋 저장이 취소되었습니다.');
+			return;
 		}
 
-		if (settingsSnapshot.customPrompts) {
-			delete settingsSnapshot.customPrompts;
+		// 강제 동기화: promptManager → extensionSettings
+		if (promptManager && promptManager.customPrompts) {
+			extensionSettings.customPrompts = promptManager.customPrompts;
 		}
+
+		// 즉시 스냅샷
+		const settingsSnapshot = simpleDeepClone(extensionSettings);
+		const customPromptsSnapshot = simpleDeepClone(
+			promptManager?.customPrompts || extensionSettings.customPrompts || []
+		);
+
+		// 재귀 방지
+		if (settingsSnapshot.presets) delete settingsSnapshot.presets;
+		if (settingsSnapshot.customPrompts) delete settingsSnapshot.customPrompts;
 
 		const newPreset = {
 			id: `preset_${Date.now()}`,
-			name: presetName,
-			version: 2, // V2 버전 태그
-			settings: settingsSnapshot, // presets가 없는 깔끔한 설정
-			customPrompts: extensionSettings.customPrompts || [] // 프롬프트는 따로 저장
+			name: presetName.trim(),
+			version: 2,
+			settings: settingsSnapshot,
+			customPrompts: customPromptsSnapshot // 별도 스냅샷 사용
 		};
 
-		// 내 목록에 추가하고 저장
-        this.presets.push(newPreset);
-        this.saveToSettings();
-        this.updatePresetDropdown();
-
-        $('#llm_preset_select').val(newPreset.id);
-        toastr.success(`프리셋 "${presetName}"이(가) 저장되었습니다.`);
+		this.presets.push(newPreset);
+		this.saveToSettings();
+		this.updatePresetDropdown();
+		$('#llm_preset_select').val(newPreset.id);
+		toastr.success(`프리셋 "${presetName}"이(가) 저장되었습니다.`);
+		
+		// 저장/갱신 직전 확인
+		console.assert(
+			extensionSettings.customPrompts === promptManager.customPrompts,
+			'참조 불일치 감지!'
+		);
     }
 
     // 드롭다운 선택 시 바로 적용 (확인 없이)
@@ -4961,7 +4969,7 @@ class PresetManager {
 
     // 선택된 프리셋을 현재 설정으로 업데이트 (확인창 있음)
     async updateSelectedPreset() {
-		
+		/*
 		// --- [디버깅 로그 시작] ---
         console.group('🛑 [LLM Translator] 프리셋 저장/갱신 데이터 검증');
         
@@ -5002,46 +5010,59 @@ class PresetManager {
         console.groupEnd();
         // --- [디버깅 로그 끝] ---
 		
+		*/
 		
-        const selectedId = $('#llm_preset_select').val();
-        if (!selectedId) {
-            toastr.warning('업데이트할 프리셋을 선택하세요.');
-            return;
-        }
+		const selectedId = $('#llm_preset_select').val();
+		if (!selectedId) {
+			toastr.warning('업데이트할 프리셋을 선택하세요.');
+			return;
+		}
 
-        const preset = this.presets.find(p => p.id === selectedId);
-        if (!preset) {
-            toastr.error('선택한 프리셋을 찾을 수 없습니다.');
-            return;
-        }
+		const preset = this.presets.find(p => p.id === selectedId);
+		if (!preset) {
+			toastr.error('선택한 프리셋을 찾을 수 없습니다.');
+			return;
+		}
 
-        const confirm = await callGenericPopup(
-            `"${preset.name}" 프리셋을 현재 설정으로 업데이트하시겠습니까?\n(기존 프리셋 내용이 덮어쓰기됩니다.)`,
-            POPUP_TYPE.CONFIRM
-        );
+		// 팝업 뜨기 BEFORE 스냅샷 찍기
+		// 강제 동기화
+		if (promptManager && promptManager.customPrompts) {
+			extensionSettings.customPrompts = promptManager.customPrompts;
+		}
 
-        if (!confirm) {
-            toastr.info('프리셋 업데이트가 취소되었습니다.');
-            return;
-        }
+		// 즉시 스냅샷
+		const settingsSnapshot = simpleDeepClone(extensionSettings);
+		const customPromptsSnapshot = simpleDeepClone(
+			promptManager?.customPrompts || extensionSettings.customPrompts || []
+		);
 
-        // 현재 설정으로 프리셋 업데이트
-        const settingsSnapshot = simpleDeepClone(extensionSettings);
-        
-        if (settingsSnapshot.presets) {
-            delete settingsSnapshot.presets;
-        }
-        if (settingsSnapshot.customPrompts) {
-            delete settingsSnapshot.customPrompts;
-        }
+		// 팝업 띄우기
+		const confirm = await callGenericPopup(
+			`"${preset.name}" 프리셋을 현재 설정으로 업데이트하시겠습니까?\n(기존 프리셋 내용이 덮어쓰기됩니다.)`,
+			POPUP_TYPE.CONFIRM
+		);
 
-        // 현재 설정으로 프리셋 업데이트 (버전도 최신으로 갱신 권장)
-        preset.version = 2; 
-        preset.settings = settingsSnapshot;
-        preset.customPrompts = simpleDeepClone(extensionSettings.customPrompts || []);
+		if (!confirm) {
+			toastr.info('프리셋 업데이트가 취소되었습니다.');
+			return;
+		}
 
-        this.saveToSettings();
-        toastr.success(`프리셋 "${preset.name}"을(를) 업데이트했습니다.`);
+		// 재귀 방지
+		if (settingsSnapshot.presets) delete settingsSnapshot.presets;
+		if (settingsSnapshot.customPrompts) delete settingsSnapshot.customPrompts;
+
+		// 미리 찍어둔 스냅샷 사용
+		preset.version = 2;
+		preset.settings = settingsSnapshot;
+		preset.customPrompts = customPromptsSnapshot;
+
+		this.saveToSettings();
+		toastr.success(`프리셋 "${preset.name}"을(를) 업데이트했습니다.`);
+		// 저장/갱신 직전 확인
+		console.assert(
+			extensionSettings.customPrompts === promptManager.customPrompts,
+			'참조 불일치 감지!'
+		);
     }
 
     async deleteSelectedPreset() {
@@ -5072,6 +5093,7 @@ class PresetManager {
         this.updatePresetDropdown();
 
         toastr.success(`프리셋 "${preset.name}"이(가) 삭제되었습니다.`);
+		
     }
 
     exportToJson() {
