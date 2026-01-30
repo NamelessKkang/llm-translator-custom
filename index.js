@@ -2195,6 +2195,36 @@ function initializeEventHandlers() {
             toastr.error('팝업을 여는 중 오류가 발생했습니다.');
         }
     });
+    // Plain text export 시 번역 HTML 제거 핸들러
+    // .exportChatButton 클릭 전에 display_text에서 llm-translator HTML을 원본 텍스트로 교체
+    $(document).on('click', '.exportChatButton[data-format="txt"]', function (e) {
+        // 현재 채팅의 모든 메시지에서 display_text 내 번역 HTML 제거
+        const context = getContext();
+        if (!context || !context.chat) return;
+
+        context.chat.forEach((message) => {
+            if (message?.extra?.display_text) {
+                // llm-translator-details 패턴이 있는지 확인
+                if (message.extra.display_text.includes('llm-translator-details') ||
+                    message.extra.display_text.includes('llm-translator-summary')) {
+                    // display_text를 원본 mes로 교체 (export용)
+                    // 백업 후 교체
+                    message.extra._display_text_backup = message.extra.display_text;
+                    message.extra.display_text = message.mes;
+                }
+            }
+        });
+
+        // export 완료 후 복원 (약간의 딜레이 후)
+        setTimeout(() => {
+            context.chat.forEach((message) => {
+                if (message?.extra?._display_text_backup) {
+                    message.extra.display_text = message.extra._display_text_backup;
+                    delete message.extra._display_text_backup;
+                }
+            });
+        }, 1000);
+    });
 
 
 }
@@ -5356,3 +5386,4 @@ class PresetManager {
         }
     }
 }
+
