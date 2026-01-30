@@ -10,6 +10,7 @@ import {
 } from '../../../../script.js';
 
 import { extension_settings, getContext, saveMetadataDebounced } from '../../../extensions.js';
+import { isTrueBoolean } from '../../../utils.js';
 import { SECRET_KEYS, secret_state } from '../../../secrets.js';
 import { POPUP_TYPE, callGenericPopup } from '../../../popup.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
@@ -4259,6 +4260,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'LlmTranslateID',
     callback: async (parsedArgs) => {
+        const shouldAwait = isTrueBoolean(parsedArgs?.await);
         const messageIdStr = validateAndNormalizeMessageId(parsedArgs.messageId);
 
         let actualMessageId = messageIdStr;
@@ -4283,16 +4285,28 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             return `메시지 ID ${messageId}를 찾을 수 없습니다. (채팅 길이: ${context.chat.length})`;
         }
 
-        // 백그라운드에서 번역 실행 (UI 블로킹 방지)
-        translateMessage(messageId, true, 'LlmTranslateID_command').catch(error => {
-            console.error('Translation error:', error);
-            toastr.error(`메시지 ID ${messageId} 번역 중 오류가 발생했습니다.`);
-        });
+        if (shouldAwait) {
+            // await=true: 번역 완료까지 대기
+            try {
+                await translateMessage(messageId, true, 'LlmTranslateID_command');
+                return `메시지 ID ${messageId} 번역이 완료되었습니다.`;
+            } catch (error) {
+                console.error('Translation error:', error);
+                toastr.error(`메시지 ID ${messageId} 번역 중 오류가 발생했습니다.`);
+                return `메시지 ID ${messageId} 번역 중 오류가 발생했습니다.`;
+            }
+        } else {
+            // await=false (기본): 백그라운드에서 번역 실행 (UI 블로킹 방지)
+            translateMessage(messageId, true, 'LlmTranslateID_command').catch(error => {
+                console.error('Translation error:', error);
+                toastr.error(`메시지 ID ${messageId} 번역 중 오류가 발생했습니다.`);
+            });
 
-        // 즉시 성공 메시지 반환 (UI 블로킹 없음)
-        return `메시지 ID ${messageId} 번역을 시작했습니다.`;
+            // 즉시 성공 메시지 반환 (UI 블로킹 없음)
+            return `메시지 ID ${messageId} 번역을 시작했습니다.`;
+        }
     },
-    helpString: '지정한 ID의 메시지를 LLM 번역기로 번역합니다. messageId를 생략하면 마지막 메시지를 대상으로 합니다.\n사용법: /LlmTranslateID [messageId=<메시지ID>]',
+    helpString: '지정한 ID의 메시지를 LLM 번역기로 번역합니다. messageId를 생략하면 마지막 메시지를 대상으로 합니다.\nawait=true 설정 시 번역 완료까지 대기합니다.\n사용법: /LlmTranslateID [messageId=<메시지ID>] [await=true]',
     namedArgumentList: [
         SlashCommandNamedArgument.fromProps({
             name: 'messageId',
@@ -4300,6 +4314,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             isRequired: false,
             defaultValue: '{{lastMessageId}}',
             typeList: [ARGUMENT_TYPE.STRING],
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'await',
+            description: 'true로 설정하면 번역 완료까지 대기합니다 (파이프라인 사용 시 유용)',
+            isRequired: false,
+            defaultValue: 'false',
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            enumList: ['true', 'false'],
         }),
     ],
 }));
@@ -4432,10 +4454,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
      */
     returns: '삭제 작업 성공/실패/정보 메시지',
 }));
-// 기존 llmTranslate 수정: prompt 인수 추가
+// 기존 llmTranslate 수정: prompt 인수 추가, await 인수 추가
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'llmTranslate',
-    helpString: 'LLM을 사용하여 텍스트를 번역합니다. 기본적으로 채팅 번역 설정을 따르며, prompt 인수로 프롬프트를 직접 지정할 수 있습니다.\n사용법: /llmTranslate "텍스트" [prompt="프롬프트 내용"]',
+    helpString: 'LLM을 사용하여 텍스트를 번역합니다. 기본적으로 채팅 번역 설정을 따르며, prompt 인수로 프롬프트를 직접 지정할 수 있습니다.\nawait=true(기본값) 설정 시 번역 완료까지 대기합니다.\n사용법: /llmTranslate "텍스트" [prompt="프롬프트 내용"] [await=true]',
     unnamedArgumentList: [
         new SlashCommandArgument('번역할 텍스트', ARGUMENT_TYPE.STRING, true, false, ''),
     ],
@@ -4445,9 +4467,18 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: '사용할 커스텀 프롬프트 (생략 시 기본 채팅 번역 프롬프트 사용)',
             isRequired: false,
             typeList: [ARGUMENT_TYPE.STRING],
-        })
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'await',
+            description: 'true(기본값)로 설정하면 번역 완료까지 대기합니다 (파이프라인 사용 시 유용)',
+            isRequired: false,
+            defaultValue: 'true',
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            enumList: ['true', 'false'],
+        }),
     ],
     callback: async (args, value) => {
+        const shouldAwait = args?.await === undefined ? true : isTrueBoolean(args?.await);
         // args.prompt가 있으면 그것을 사용, 없으면 함수 내부 기본값(llm_prompt_chat) 사용을 위해 undefined 전달
         const customPrompt = args.prompt || undefined;
         const textToTranslate = String(value);
@@ -4456,22 +4487,31 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             return '번역할 텍스트를 입력해주세요.';
         }
 
-        try {
-            // translate 함수는 prompt 옵션이 없으면 기본적으로 llm_prompt_chat을 사용함
-            const translatedText = await translate(textToTranslate, { prompt: customPrompt });
-            return translatedText;
-        } catch (error) {
-            console.error('LLMTranslate Slash Command Error:', error);
-            return `LLM 번역 중 오류 발생: ${error.message}`;
+        if (shouldAwait) {
+            // await=true (기본값): 번역 완료까지 대기
+            try {
+                const translatedText = await translate(textToTranslate, { prompt: customPrompt });
+                return translatedText;
+            } catch (error) {
+                console.error('LLMTranslate Slash Command Error:', error);
+                return `LLM 번역 중 오류 발생: ${error.message}`;
+            }
+        } else {
+            // await=false: 백그라운드에서 번역 실행, 즉시 반환
+            translate(textToTranslate, { prompt: customPrompt }).catch(error => {
+                console.error('LLMTranslate Slash Command Error:', error);
+                toastr.error(`LLM 번역 중 오류 발생: ${error.message}`);
+            });
+            return '번역을 시작했습니다.';
         }
     },
     returns: ARGUMENT_TYPE.STRING,
 }));
 
-// 신규 llmTranslateInput 추가: 입력 번역용
+// 신규 llmTranslateInput 추가: 입력 번역용, await 인수 추가
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'llmTranslateInput',
-    helpString: 'LLM을 사용하여 텍스트를 입력용(주로 영어)으로 번역합니다. 기본적으로 입력 번역 설정을 따르며, prompt 인수로 프롬프트를 직접 지정할 수 있습니다.\n사용법: /llmTranslateInput "텍스트" [prompt="프롬프트 내용"]',
+    helpString: 'LLM을 사용하여 텍스트를 입력용(주로 영어)으로 번역합니다. 기본적으로 입력 번역 설정을 따르며, prompt 인수로 프롬프트를 직접 지정할 수 있습니다.\nawait=true(기본값) 설정 시 번역 완료까지 대기합니다.\n사용법: /llmTranslateInput "텍스트" [prompt="프롬프트 내용"] [await=true]',
     unnamedArgumentList: [
         new SlashCommandArgument('번역할 텍스트', ARGUMENT_TYPE.STRING, true, false, ''),
     ],
@@ -4481,9 +4521,18 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: '사용할 커스텀 프롬프트 (생략 시 기본 입력 번역 프롬프트 사용)',
             isRequired: false,
             typeList: [ARGUMENT_TYPE.STRING],
-        })
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'await',
+            description: 'true(기본값)로 설정하면 번역 완료까지 대기합니다 (파이프라인 사용 시 유용)',
+            isRequired: false,
+            defaultValue: 'true',
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            enumList: ['true', 'false'],
+        }),
     ],
     callback: async (args, value) => {
+        const shouldAwait = args?.await === undefined ? true : isTrueBoolean(args?.await);
         // args.prompt가 있으면 사용, 없으면 설정의 입력 번역 프롬프트 사용
         const inputPrompt = args.prompt || extensionSettings.llm_prompt_input || 'Please translate the following text to english:';
         const textToTranslate = String(value);
@@ -4492,16 +4541,28 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             return '번역할 텍스트를 입력해주세요.';
         }
 
-        try {
-            // isInputTranslation: true를 전달하여 컨텍스트 처리(마지막 메시지 제외 등)가 입력 번역에 맞게 동작하도록 함
-            const translatedText = await translate(textToTranslate, { 
+        if (shouldAwait) {
+            // await=true (기본값): 번역 완료까지 대기
+            try {
+                const translatedText = await translate(textToTranslate, { 
+                    prompt: inputPrompt,
+                    isInputTranslation: true 
+                });
+                return translatedText;
+            } catch (error) {
+                console.error('LLMTranslateInput Slash Command Error:', error);
+                return `LLM 입력 번역 중 오류 발생: ${error.message}`;
+            }
+        } else {
+            // await=false: 백그라운드에서 번역 실행, 즉시 반환
+            translate(textToTranslate, { 
                 prompt: inputPrompt,
                 isInputTranslation: true 
+            }).catch(error => {
+                console.error('LLMTranslateInput Slash Command Error:', error);
+                toastr.error(`LLM 입력 번역 중 오류 발생: ${error.message}`);
             });
-            return translatedText;
-        } catch (error) {
-            console.error('LLMTranslateInput Slash Command Error:', error);
-            return `LLM 입력 번역 중 오류 발생: ${error.message}`;
+            return '번역을 시작했습니다.';
         }
     },
     returns: ARGUMENT_TYPE.STRING,
