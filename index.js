@@ -3200,6 +3200,154 @@ async function deleteTranslationById(messageIdStr, swipeNumberStr) {
     }
 }
 
+/**
+ * 지정된 메시지 ID에 번역문을 설정(저장 또는 수정)합니다.
+ * 기존 번역문이 없어도 새로 저장할 수 있습니다.
+ * @param {string} messageIdStr - 대상 메시지의 ID (문자열 형태)
+ * @param {string} translationText - 저장할 번역문
+ * @returns {Promise<string>} 작업 결과 메시지
+ */
+async function setTranslationById(messageIdStr, translationText) {
+    const DEBUG_PREFIX = `[${extensionName} - SetTranslationByID]`;
+    logDebug(`Attempting to set translation for message ID: ${messageIdStr}`);
+
+    // 0. 'last' 처리
+    let actualMessageIdStr = messageIdStr;
+    if (messageIdStr === 'last') {
+        const context = getContext();
+        if (!context || !context.chat || context.chat.length === 0) {
+            const errorMsg = '채팅 메시지가 없습니다.';
+            logDebug(errorMsg);
+            toastr.error(errorMsg);
+            return errorMsg;
+        }
+        actualMessageIdStr = String(context.chat.length - 1);
+        logDebug(`'last' converted to messageId: ${actualMessageIdStr}`);
+    }
+
+    // 1. 메시지 ID 파싱 및 유효성 검사
+    const messageId = parseInt(actualMessageIdStr, 10);
+    if (isNaN(messageId) || messageId < 0) {
+        const errorMsg = `유효하지 않은 메시지 ID: "${actualMessageIdStr}". 숫자를 입력하세요.`;
+        logDebug(errorMsg);
+        toastr.error(errorMsg);
+        return errorMsg;
+    }
+
+    // 2. 컨텍스트 및 대상 메시지 가져오기
+    const context = getContext();
+    if (!context || !context.chat) {
+        const errorMsg = '컨텍스트 또는 채팅 데이터를 찾을 수 없습니다.';
+        logDebug(errorMsg);
+        toastr.error(errorMsg);
+        return `오류: ${errorMsg}`;
+    }
+    if (messageId >= context.chat.length) {
+        const errorMsg = `메시지 ID ${messageId}를 찾을 수 없습니다. (채팅 길이: ${context.chat.length})`;
+        logDebug(errorMsg);
+        toastr.error(errorMsg);
+        return errorMsg;
+    }
+    const message = context.chat[messageId];
+    if (!message) {
+        const errorMsg = `메시지 ID ${messageId}에 대한 데이터를 가져올 수 없습니다.`;
+        logDebug(errorMsg);
+        toastr.error(errorMsg);
+        return `오류: ${errorMsg}`;
+    }
+
+    // 3. 원본 텍스트 가져오기 (DB 검색 키)
+    const originalText = substituteParams(message.mes, context.name1, message.name);
+    if (!originalText) {
+        const errorMsg = `메시지 ID ${messageId}의 원본 텍스트를 가져올 수 없습니다.`;
+        logDebug(errorMsg);
+        toastr.warning(errorMsg);
+        return errorMsg;
+    }
+    logDebug(`Original text for message ID ${messageId} (used as DB key): "${originalText.substring(0, 50)}..."`);
+
+    // 4. 번역문이 비어있으면 삭제 처리
+    if (!translationText || translationText.trim() === '') {
+        try {
+            await deleteTranslationByOriginalText(originalText);
+            
+            // UI에서도 번역문 제거
+            if (message.extra && message.extra.display_text) {
+                delete message.extra.display_text;
+                delete message.extra.original_text_for_translation;
+                delete message.extra.original_translation_backup;
+                await updateMessageBlock(messageId, message);
+                await context.saveChat();
+            }
+            
+            const successMsg = `메시지 ID ${messageId}의 번역문이 삭제되었습니다.`;
+            logDebug(successMsg);
+            toastr.success(successMsg);
+            return successMsg;
+        } catch (error) {
+            if (error && error.message && error.message.includes('no matching data')) {
+                const infoMsg = `메시지 ID ${messageId}에 삭제할 번역문이 없습니다.`;
+                logDebug(infoMsg);
+                toastr.info(infoMsg);
+                return infoMsg;
+            }
+            throw error;
+        }
+    }
+
+    // 5. DB에서 기존 번역 확인 후 저장 또는 업데이트
+    try {
+        const existingTranslation = await getTranslationFromDB(originalText);
+        
+        if (existingTranslation) {
+            // 기존 번역이 있으면 업데이트
+            await updateTranslationByOriginalText(originalText, translationText);
+            logDebug(`Updated existing translation for message ${messageId}`);
+        } else {
+            // 기존 번역이 없으면 새로 추가
+            await addTranslationToDB(originalText, translationText);
+            logDebug(`Added new translation for message ${messageId}`);
+        }
+
+        // 6. 메시지 extra 데이터 설정
+        if (typeof message.extra !== 'object') {
+            message.extra = {};
+        }
+        
+        // 화면 표시용 HTML 생성
+        const processedText = processTranslationText(originalText, translationText);
+        message.extra.display_text = processedText;
+        message.extra.original_text_for_translation = originalText;
+        
+        // 원문 표시 백업 초기화
+        delete message.extra.original_translation_backup;
+
+        // 7. UI 업데이트 및 채팅 저장
+        await updateMessageBlock(messageId, message);
+        
+        // 번역문 표시 플래그 설정
+        setTimeout(() => {
+            const messageBlock = $(`#chat .mes[mesid="${messageId}"]`);
+            const textBlock = messageBlock.find('.mes_text');
+            textBlock.data('showing-original', false);
+        }, 100);
+        
+        await context.saveChat();
+
+        const successMsg = existingTranslation 
+            ? `메시지 ID ${messageId}의 번역문이 수정되었습니다.`
+            : `메시지 ID ${messageId}에 번역문이 저장되었습니다.`;
+        logDebug(successMsg);
+        toastr.success(successMsg);
+        return successMsg;
+
+    } catch (error) {
+        console.error(`${DEBUG_PREFIX} Error setting translation for message ID ${messageId}:`, error);
+        const errorMsg = `메시지 ID ${messageId}의 번역문 저장 중 오류가 발생했습니다: ${error.message}`;
+        toastr.error(errorMsg);
+        return `오류: ${errorMsg}`;
+    }
+}
 
 
 
@@ -4329,6 +4477,47 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     returns: ARGUMENT_TYPE.STRING,
 }));
 
+// 번역문 수정/저장 커맨드
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'llmSetTranslation',
+    callback: async (parsedArgs, unnamedValue) => {
+        const DEBUG_PREFIX_CMD = `[${extensionName} - Cmd /llmSetTranslation]`;
+        logDebug(`${DEBUG_PREFIX_CMD} Executing with args:`, parsedArgs, 'value:', unnamedValue);
+
+        // messageId 처리 (생략 시 마지막 메시지)
+        let messageIdStr = validateAndNormalizeMessageId(parsedArgs.messageId);
+        
+        // validateAndNormalizeMessageId가 'last'를 반환한 경우 실제 ID로 변환
+        if (messageIdStr === 'last') {
+            const context = getContext();
+            if (!context || !context.chat || context.chat.length === 0) {
+                return '오류: 채팅 메시지가 없습니다.';
+            }
+            messageIdStr = String(context.chat.length - 1);
+        }
+
+        // 번역문 가져오기 (unnamed argument)
+        const translationText = String(unnamedValue || '').trim();
+
+        // setTranslationById 함수 호출
+        return await setTranslationById(messageIdStr, translationText);
+    },
+    helpString: '지정한 메시지 ID에 번역문을 저장하거나 수정합니다. 기존 번역문이 없어도 새로 저장됩니다. 빈 값을 입력하면 번역문이 삭제됩니다.\n사용법: /llmSetTranslation [messageId=<메시지ID>] 번역문 내용\n예시: /llmSetTranslation messageId=3 번역된 텍스트\n예시: /llmSetTranslation 번역된 텍스트 (마지막 메시지에 저장)',
+    unnamedArgumentList: [
+        new SlashCommandArgument('저장할 번역문', ARGUMENT_TYPE.STRING, false, false, ''),
+    ],
+    namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({
+            name: 'messageId',
+            description: '번역문을 저장할 메시지의 ID (생략 시 마지막 메시지)',
+            isRequired: false,
+            defaultValue: '{{lastMessageId}}',
+            typeList: [ARGUMENT_TYPE.STRING],
+        }),
+    ],
+    returns: '저장/수정/삭제 결과 메시지',
+}));
+
 // 범위 지정 번역문 가져오기 커맨드
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'llmGetTranslations',
@@ -5167,4 +5356,3 @@ class PresetManager {
         }
     }
 }
-
