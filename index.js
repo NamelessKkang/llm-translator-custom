@@ -80,7 +80,7 @@ const defaultSettings = {
         google: 'gemini-2.5-pro',
         cohere: 'command',
         vertexai: 'gemini-2.5-pro',
-        openrouter: 'deepseek/deepseek-r1',
+        openrouter: 'google/gemini-2.5-flash-lite',
         deepseek: 'deepseek-chat'
     },
     custom_model: '',
@@ -586,12 +586,16 @@ function updateModelList() {
         'openrouter': [
             'deepseek/deepseek-r1',
             'deepseek/deepseek-chat',
-            'anthropic/claude-3-opus',
-            'anthropic/claude-3-sonnet',
+            'moonshotai/kimi-k2.5',
+            'moonshotai/kimi-k2',
+            'google/gemini-3-pro-preview',
+            'google/gemini-3-flash-preview',
+            'google/gemini-2.5-pro',
+            'google/gemini-2.5-flash',
+			'google/gemini-2.5-flash-lite',
             'anthropic/claude-3-haiku',
             'meta-llama/llama-3-70b-instruct',
-            'microsoft/wizardlm-2-8x22b',
-            'google/gemini-pro-1.5'
+            'microsoft/wizardlm-2-8x22b'
         ],
 		'deepseek': [
             'deepseek-chat',    // V3
