@@ -1,7 +1,7 @@
 <div class="translation_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>LLM Translator - custom_V4</b>
+            <b>LLM Translator - custom_V5</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
 
@@ -40,6 +40,36 @@
                 <option value="original_first">원문 먼저 보기</option>
                 <option value="unfolded">펼침 방식</option>
             </select>
+            
+			<div class="inline-drawer" style="margin-top: 10px;">
+				<label for="llm_auto_mode">자동 번역 모드</label>
+			</div>
+			<select id="llm_auto_mode" class="text_pole">
+				<option value="none">사용 안 함</option>
+				<option value="all">전체 번역 (AI + 유저)</option>
+				<option value="ai">AI 메시지 만</option>
+				<option value="user">유저 메시지 만</option>
+			</select>
+
+            <div style="margin-top: 10px; margin-bottom: 5px;">
+                <label for="llm_user_regexes" class="flex-container align-items-center space-between">
+                    <span>보호할 텍스트 (번역 제외)</span>
+                    <i class="fas fa-info-circle" title="이 패턴과 일치하는 텍스트는 번역하지 않고 원문 그대로 유지합니다. (프리셋에 저장됨)&#10;줄바꿈으로 구분하여 입력하세요."></i>
+                </label>
+            </div>
+            <textarea id="llm_user_regexes" class="text_pole" rows="3" placeholder="예: Name: 또는 /<tag>.*?<\/tag>/gi"></textarea>
+			
+			<!-- [추가됨] 접기 금지 설정 -->
+            <div style="margin-top: 10px; margin-bottom: 5px;">
+                <label for="llm_user_no_fold_regexes" class="flex-container align-items-center space-between">
+                    <span>접기 금지 텍스트 (항상 펼침)</span>
+                    <i class="fas fa-info-circle" title="이 패턴과 일치하는 내용이 포함된 줄은 '접기' 모드에서도 항상 펼쳐진 상태로 표시됩니다.&#10;예: 코드 블록, 특정 강조 구문 등&#10;줄바꿈으로 구분하여 입력하세요."></i>
+                </label>
+            </div>
+            <textarea id="llm_user_no_fold_regexes" class="text_pole" rows="3" placeholder="예: ``` 또는 /\[.*?\]/gi"></textarea>
+			
+			
+			
             <hr>
 
             <label class="flex-container">
@@ -50,9 +80,6 @@
             </label>
             <label class="flex-container">
                 <input type="checkbox" id="llm_use_reverse_proxy">리버스 프록시 사용
-            </label>
-            <label class="flex-container">
-                <input type="checkbox" id="auto_translate_new_messages">새 메시지 자동 번역
             </label>
             <label class="flex-container">
                 <input type="checkbox" id="force_sequential_matching">문단 순차 매칭 사용
@@ -85,6 +112,8 @@
                 <option value="cohere">Cohere</option>
                 <option value="google">Google AI</option>
                 <option value="vertexai">Google Vertex AI</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="deepseek">DeepSeek</option>
             </select>
 
             <label for="llm_model">모델</label>
