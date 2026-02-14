@@ -1219,6 +1219,9 @@ async function translateMessage(messageId, forceTranslate = false, source = 'man
     try {
         const originalText = substituteParams(message.mes, context.name1, message.name);
 
+        // [추가할 코드] 원문이 없거나 공백뿐이면 즉시 종료 (무한 루프 방지)
+        if (!originalText || !originalText.trim()) return;
+
         // 번역 시작 알림 (조건부)
         // 1. 모든 수동 번역시 표시
         // 2. 자동 번역시: DB에 번역문이 없는 새로운 메시지만 표시 (스와이프 기존 번역 제외)
