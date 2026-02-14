@@ -595,7 +595,8 @@ function updateModelList() {
 			'google/gemini-2.5-flash-lite',
             'anthropic/claude-3-haiku',
             'meta-llama/llama-3-70b-instruct',
-            'microsoft/wizardlm-2-8x22b'
+            'microsoft/wizardlm-2-8x22b',
+			''
         ],
 		'deepseek': [
             'deepseek-chat',    // V3
@@ -3876,29 +3877,12 @@ function getCombinedRegexes() {
         /<think>[\s\S]*?<\/think>/gi,
         /<thinking>[\s\S]*?<\/thinking>/gi,
         /<tableEdit>[\s\S]*?<\/tableEdit>/gi,
-        /<details[^>]*>[\s\S]*?<\/details>/gi,
-        /`{3,}[^`]*[\s\S]*?`{3,}/g,
+        ///<details[^>]*>[\s\S]*?<\/details>/gi,
+        ///`{3,}[^`]*[\s\S]*?`{3,}/g,
 		/<UpdateVariable>[\s\S]*?<\/UpdateVariable>/gi,
         /<StatusPlaceHolderImpl\s*\/?>/gi
     ];
 
-    // Font Manager 태그 추가
-    try {
-        const fontManagerSettings = localStorage.getItem('font-manager-settings');
-        if (fontManagerSettings) {
-            const parsedSettings = JSON.parse(fontManagerSettings);
-            const currentPresetId = parsedSettings?.currentPreset;
-            const presets = parsedSettings?.presets || [];
-            const currentPreset = presets.find(p => p.id === currentPresetId);
-            const customTags = currentPreset?.customTags ?? parsedSettings?.customTags ?? [];
-            customTags.forEach(tag => {
-                if (tag.tagName) {
-                    const escapedTagName = tag.tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    specialBlockRegexes.push(new RegExp(`<${escapedTagName}[^>]*>([\\s\\S]*?)</${escapedTagName}>`, 'gi'));
-                }
-            });
-        }
-    } catch (e) { }
 
     // 사용자 정의 정규식 추가
     if (extensionSettings.user_defined_regexes && Array.isArray(extensionSettings.user_defined_regexes)) {
@@ -3931,7 +3915,7 @@ function getNoFoldRegexes() {
         /<StatusPlaceHolderImpl\s*\/?>/gi,
         
         // 코드 블록
-        /^```[\s\S]*?```$/gm,
+        ///^```[\s\S]*?```$/gm,
         
         // HTML (두 가지 케이스)
         /^<!DOCTYPE[\s\S]*?<\/html>/gi,  // DOCTYPE 포함
