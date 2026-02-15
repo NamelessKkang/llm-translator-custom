@@ -3854,6 +3854,7 @@ async function prepareQrAndCharacterForDbManagement() {
  * @returns {string} 처리된 문자열
  */
 function correctBackticks(input) {
+	return input;
     // 입력값이 문자열이 아니거나 비어있으면 그대로 반환
     if (typeof input !== 'string' || input === null) {
         return input;
@@ -4083,29 +4084,46 @@ function applyIsolation(text, source) {
 // ============================================================================
 // Phase 2: Structure Analysis (골격 및 큐 추출)
 // ============================================================================
-
 function analyzeStructure(text) {
     const skeleton = [];
     const textQueue = [];
-
-    // 줄 단위 분해 (기존의 trim() 등 왜곡 행위 금지)
+    
+    // 줄 단위 분해
     const lines = text.split('\n');
+    let inCodeBlock = false;
 
     lines.forEach(line => {
         const trimmedLine = line.trim();
         
-        // 1. 마스킹 토큰만 있는 줄인가?
-        // (주의: 텍스트 중간에 마스킹이 섞인 건 TEXT로 취급해야 함)
+        // 코드 블록 펜스 감지 (백틱 3개 이상)
+        const isCodeFence = /^\s*`{3,}/.test(line);
+
+        if (isCodeFence) {
+            inCodeBlock = !inCodeBlock;
+            // 펜스 라인은 구조 유지(SKELETON)
+            skeleton.push({ type: 'SKELETON', content: line });
+            return;
+        }
+
+        if (inCodeBlock) {
+            // 코드 블록 내부 내용은 무조건 SKELETON (접기 태그 침투 방지)
+            skeleton.push({ type: 'SKELETON', content: line });
+            return;
+        }
+
+        // --- 코드 블록 밖의 일반 로직 ---
+
+        // 1. 마스킹 토큰
         if (/^__MASK_[A-Z]+_[A-Z]+_\d+__$/.test(trimmedLine)) {
             skeleton.push({ type: 'MASK', content: trimmedLine });
         }
-        // 2. 빈 줄인가? (공백만 있는 경우 포함)
+        // 2. 빈 줄
         else if (trimmedLine === '') {
-            skeleton.push({ type: 'EMPTY', content: line }); // 원본 공백 유지
+            skeleton.push({ type: 'EMPTY', content: line });
         }
-        // 3. 텍스트 줄인가? (접기 대상)
+        // 3. 접기 대상 텍스트
         else {
-            skeleton.push({ type: 'TEXT', content: line }); // 원본 텍스트 유지
+            skeleton.push({ type: 'TEXT', content: line });
             textQueue.push(line);
         }
     });
@@ -4116,10 +4134,22 @@ function analyzeStructure(text) {
 function extractPureText(text) {
     const queue = [];
     const lines = text.split('\n');
+    let inCodeBlock = false;
 
     lines.forEach(line => {
         const trimmedLine = line.trim();
-        // 마스킹 줄이나 빈 줄은 큐에 넣지 않음 (순수 텍스트만 추출)
+        const isCodeFence = /^\s*`{3,}/.test(line);
+
+        if (isCodeFence) {
+            inCodeBlock = !inCodeBlock;
+            return; // 펜스는 큐에 넣지 않음
+        }
+
+        if (inCodeBlock) {
+            return; // 코드 블록 내부도 큐에 넣지 않음
+        }
+
+        // 마스킹 아니고, 빈 줄 아니면 큐에 추가
         if (!/^__MASK_[A-Z]+_[A-Z]+_\d+__$/.test(trimmedLine) && trimmedLine !== '') {
             queue.push(line);
         }
@@ -4194,14 +4224,10 @@ function renderInterleaved(skeleton, transQueue, origQueue, displayMode) {
     let htmlParts = [];
     let origIndex = 0;
 
-    // 번역문 골격(Skeleton)을 순회하며 살(Content)을 붙임
     skeleton.forEach(node => {
-        if (node.type === 'MASK') {
+        // SKELETON 타입 추가 (그대로 출력)
+        if (node.type === 'MASK' || node.type === 'EMPTY' || node.type === 'SKELETON') {
             htmlParts.push(node.content);
-        } 
-        else if (node.type === 'EMPTY') {
-            // 번역문의 줄바꿈 구조를 100% 존중 (월권 금지)
-            htmlParts.push(node.content); 
         } 
         else if (node.type === 'TEXT') {
             // 접기 대상: 큐에서 하나씩 꺼냄
@@ -4210,7 +4236,6 @@ function renderInterleaved(skeleton, transQueue, origQueue, displayMode) {
             // 짝지을 원문이 있으면 가져오고, 없으면 빈 문자열
             const origText = (origIndex < origQueue.length) ? origQueue[origIndex] : '';
             origIndex++;
-
             htmlParts.push(createDetailsTag(transText, origText, displayMode));
         }
     });
@@ -4241,32 +4266,44 @@ function createDetailsTag(transText, origText, displayMode) {
 // ============================================================================
 // Phase 5: Restoration (교차 복원)
 // ============================================================================
-
 function restoreContent(html, transMap, origMap) {
-    // 정규식: __MASK_타입_출처_ID__ 패턴을 찾음
-    return html.replace(/__MASK_([A-Z]+)_([A-Z]+)_(\d+)__/g, (match, type, source, id) => {
-        // 1. 제 짝(Map)에서 찾기
-        if (source === 'TRANS' && transMap[match]) return transMap[match];
-        if (source === 'ORIG' && origMap[match]) return origMap[match];
+    let currentHtml = html;
+    let loopCount = 0;
+    const MAX_LOOP = 10; // 무한 루프 방지
 
-        // 2. 교차 복원 (Cross-Restore)
-        // 줄 밀림 등으로 번역문 위치에 원문 키가 들어간 경우 등 대비
-        if (source === 'TRANS') {
-            const crossKey = match.replace('_TRANS_', '_ORIG_');
-            if (origMap[crossKey]) return origMap[crossKey];
-        }
-        if (source === 'ORIG') {
-            const crossKey = match.replace('_ORIG_', '_TRANS_');
-            if (transMap[crossKey]) return transMap[crossKey];
-        }
+    while (loopCount < MAX_LOOP) {
+        let hasChanged = false;
 
-        // 3. 복원 실패 시 (디버깅용 안전장치)
-        // 토큰 그대로 반환하여 사용자가 문제를 인지할 수 있도록 함
-        return match;
-    });
+        currentHtml = currentHtml.replace(/__MASK_([A-Z]+)_([A-Z]+)_(\d+)__/g, (match, type, source, id) => {
+            let replacement = null;
+
+            // 1. 제 짝(Map)에서 찾기
+            if (source === 'TRANS' && transMap[match]) replacement = transMap[match];
+            else if (source === 'ORIG' && origMap[match]) replacement = origMap[match];
+
+            // 2. 교차 복원
+            else if (source === 'TRANS') {
+                const crossKey = match.replace('_TRANS_', '_ORIG_');
+                if (origMap[crossKey]) replacement = origMap[crossKey];
+            }
+            else if (source === 'ORIG') {
+                const crossKey = match.replace('_ORIG_', '_TRANS_');
+                if (transMap[crossKey]) replacement = transMap[crossKey];
+            }
+
+            if (replacement !== null) {
+                hasChanged = true;
+                return replacement;
+            }
+            return match;
+        });
+
+        if (!hasChanged) break; // 더 이상 바뀐 게 없으면 탈출
+        loopCount++;
+    }
+
+    return currentHtml;
 }
-
-
 
 
 
